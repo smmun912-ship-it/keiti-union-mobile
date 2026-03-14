@@ -38,10 +38,11 @@ document.addEventListener('DOMContentLoaded', () => {
         signupBtn.addEventListener('click', async () => {
             const id = document.getElementById('regId').value;
             const name = document.getElementById('regName').value;
+            const role = document.getElementById('regRole').value;
             const pw = document.getElementById('regPw').value;
 
-            if(!id || !name || pw.length < 6) {
-                showAlert("모든 항목을 입력하고, 비밀번호는 6자리 이상 설정해주세요.");
+            if(!id || !name || !role || pw.length < 6) {
+                showAlert("직위를 포함한 모든 항목을 입력하고, 비밀번호는 6자리 이상 설정해주세요.");
                 return;
             }
 
@@ -63,10 +64,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         status = "approved"; // 관리자 권한 즉시 부여
                     }
 
+                    // 직위 기반 관리자 여부 확인
+                    const isAdminRole = (role === '위원장' || role === '부위원장' || role === '사무처장');
+
                     // Firestore에 회원 정보 저장
                     await fb.setDoc(fb.doc(fb.db, "users", user.uid), {
                         empId: id,
                         name: finalName,
+                        role: role,
+                        isAdmin: isAdminRole,
                         status: status, // admin이 나중에 'approved'로 변경해야 로그인 가능 (216008 제외)
                         createdAt: fb.serverTimestamp()
                     });
@@ -138,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         // DB에 문서가 없어도 특별 계정인 경우 무사 통과
                         if (id === "216008") {
-                            currentUser = { empId: "216008", name: "관리자" };
+                            currentUser = { empId: "216008", name: "관리자", role: "사무처장", isAdmin: true, status: "approved" };
                             currentUserName = "관리자";
                             enterMainView();
                             loadBoardPosts();
@@ -182,7 +188,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const sections = {
         'home': document.getElementById('section-home'),
         'board': document.getElementById('section-board'),
-        'download': document.getElementById('section-download')
+        'download': document.getElementById('section-download'),
+        'myinfo': document.getElementById('section-myinfo')
     };
 
     navItems.forEach(item => {
@@ -207,8 +214,100 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 sections[target].classList.add('fade-in');
             }, 10);
+
+            // 내 정보 탭 열릴 때 데이터 바인딩
+            if (target === 'myinfo') {
+                renderMyInfo();
+            }
         });
     });
+
+    // --- 내 정보 & 로그아웃 & 승인 로직 ---
+    const btnLogout = document.getElementById('btn-logout');
+    if(btnLogout) {
+        btnLogout.addEventListener('click', async () => {
+            if(window.keitiFirebase && window.keitiFirebase.isInit) {
+                await window.keitiFirebase.signOut(window.keitiFirebase.auth);
+            }
+            currentUser = null;
+            currentUserName = "조합원";
+            mainView.classList.remove('active');
+            loginView.style.opacity = '1';
+            loginView.classList.add('active');
+            navItems[0].click(); // 로그아웃 시 홈 탭으로 리셋
+        });
+    }
+
+    async function renderMyInfo() {
+        if(!currentUser) return;
+        document.getElementById('info-name').innerText = currentUser.name || "이름없음";
+        document.getElementById('info-id').innerText = currentUser.empId || "사번안내됨";
+        document.getElementById('info-role').innerText = currentUser.role || "조합원";
+
+        const adminSection = document.getElementById('admin-pending-section');
+        const pendingList = document.getElementById('pending-users-list');
+        
+        // 관리자 직위일 경우 특별 권한 렌더링
+        if(currentUser.isAdmin) {
+            adminSection.style.display = 'block';
+            
+            // Firebase에서 pending 유저 가져오기
+            if(window.keitiFirebase && window.keitiFirebase.isInit) {
+                const fb = window.keitiFirebase;
+                try {
+                    const q = fb.query(fb.collection(fb.db, "users"));
+                    const querySnapshot = await fb.getDocs(q);
+                    pendingList.innerHTML = '';
+                    let hasPending = false;
+
+                    querySnapshot.forEach((docSnap) => {
+                        const data = docSnap.data();
+                        if(data.status === 'pending') {
+                            hasPending = true;
+                            // 관리자 승인 버튼 렌더링
+                            const userItem = `
+                                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:10px; margin-bottom:10px;">
+                                    <div>
+                                        <div style="font-weight:bold; font-size:14px; color:var(--text-main);">${escapeHtml(data.name)} <span style="font-size:12px; color:var(--text-secondary); font-weight:normal;">(${escapeHtml(data.role)})</span></div>
+                                        <div style="font-size:12px; color:var(--text-light); margin-top:4px;">사번: ${escapeHtml(data.empId)}</div>
+                                    </div>
+                                    <button class="btn btn-primary" style="padding:6px 14px; font-size:12px;" onclick="approveUser('${docSnap.id}')">승인하기</button>
+                                </div>
+                            `;
+                            pendingList.insertAdjacentHTML('beforeend', userItem);
+                        }
+                    });
+
+                    if(!hasPending) {
+                        pendingList.innerHTML = '<div style="padding: 20px; text-align:center; color:#999;">승인 대기 중인 사용자가 없습니다.</div>';
+                    }
+                } catch(err) {
+                    console.error("대기자 목록 불러오기 실패", err);
+                }
+            } else {
+                pendingList.innerHTML = '<div style="padding: 20px; text-align:center; color:#999;">(테스트 모드) 승인 기능은 Firebase 연동 시 활성화됩니다.</div>';
+            }
+        } else {
+            adminSection.style.display = 'none';
+        }
+    }
+
+    // 전역 승인 함수 노출
+    window.approveUser = async function(docId) {
+        if(!confirm("이 사용자의 가입을 승인하시겠습니까?")) return;
+
+        if(window.keitiFirebase && window.keitiFirebase.isInit) {
+            const fb = window.keitiFirebase;
+            try {
+                await fb.setDoc(fb.doc(fb.db, "users", docId), { status: 'approved' }, { merge: true });
+                showAlert("승인 완료되었습니다.");
+                renderMyInfo(); // 리스트 새로고침
+            } catch(err) {
+                console.error("승인 처리 실패", err);
+                showAlert("승인 처리에 실패했습니다.");
+            }
+        }
+    }
 
     // 퀵메뉴에서 탭 전환 유도
     const quickMenus = document.querySelectorAll('.menu-item');
