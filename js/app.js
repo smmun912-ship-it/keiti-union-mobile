@@ -512,6 +512,46 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // 전역 회원 삭제 함수
+    window.deleteMember = async function(docId) {
+        if(!confirm("이 조합원을 정말 삭제하시겠습니까? (삭제 시 로그인 불가)")) return;
+        if(window.keitiFirebase && window.keitiFirebase.isInit) {
+            try {
+                await window.keitiFirebase.deleteDoc(window.keitiFirebase.doc(window.keitiFirebase.db, "users", docId));
+                showAlert("조합원이 삭제되었습니다.");
+                loadApprovedMembers();
+            } catch(e) {
+                console.error("삭제 실패:", e);
+                showAlert("삭제 중 오류가 발생했습니다.");
+            }
+        }
+    };
+
+    // 전역 회원 정보 수정 함수
+    window.editMember = async function(docId) {
+        const newDept = prompt("새로운 소속부서를 입력하세요 (변경하지 않으려면 빈 칸 또는 취소):");
+        if(newDept === null) return;
+        const newRole = prompt("새로운 직위를 입력하세요 (변경하지 않으려면 빈 칸 또는 취소):");
+        if(newRole === null) return;
+        
+        let updates = {};
+        if(newDept !== null && newDept.trim() !== "") updates.dept = newDept.trim();
+        if(newRole !== null && newRole.trim() !== "") updates.role = newRole.trim();
+        
+        if(Object.keys(updates).length > 0) {
+            if(window.keitiFirebase && window.keitiFirebase.isInit) {
+                try {
+                    await window.keitiFirebase.updateDoc(window.keitiFirebase.doc(window.keitiFirebase.db, "users", docId), updates);
+                    showAlert("조합원 정보가 정상적으로 수정되었습니다.");
+                    loadApprovedMembers();
+                } catch(e) {
+                    console.error("수정 실패:", e);
+                    showAlert("정보 수정 중 오류가 발생했습니다.");
+                }
+            }
+        }
+    };
+
     // ----------------------------------------------------
     // [신규] 관리자 전용 전체 조합원 목록 로드
     // ----------------------------------------------------
@@ -551,16 +591,23 @@ document.addEventListener('DOMContentLoaded', () => {
                         dateStr = `${dateObj.getFullYear()}.${String(dateObj.getMonth()+1).padStart(2,'0')}.${String(dateObj.getDate()).padStart(2,'0')}`;
                     }
                     memberHTML += `
-                        <div style="border-bottom:1px solid #eee; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <div style="font-weight:bold; font-size:15px; color:var(--text-main); margin-bottom: 4px;">
-                                    ${escapeHtml(data.name)} <span style="font-size:12px; color:var(--primary-blue); font-weight:normal; margin-left:4px;">${escapeHtml(data.role)}</span>
+                        <div style="border-bottom:1px solid #eee; padding: 15px 20px; display: flex; flex-direction: column; gap: 8px;">
+                            <div style="display:flex; justify-content: space-between; align-items: flex-start;">
+                                <div style="font-weight:bold; font-size:16px; color:var(--text-main);">
+                                    ${escapeHtml(data.name)} <span style="font-size:13px; color:var(--primary-blue); font-weight:normal; margin-left:6px;">${escapeHtml(data.role)}</span>
                                 </div>
-                                <div style="font-size: 13px; color: var(--text-secondary);">
-                                    사번: ${escapeHtml(data.empId)} | 부서: ${escapeHtml(data.dept || '미지정')}
-                                </div>
+                                <div style="font-size: 13px; color: var(--text-light);">${dateStr} 가입</div>
+                            </div>
+                            <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.5;">
+                                사번: ${escapeHtml(data.empId)} <br>
+                                부서: ${escapeHtml(data.dept || '미지정')}
+                            </div>
+                            <div style="display:flex; gap: 8px; justify-content: flex-end; margin-top: 4px;">
+                                <button class="btn btn-primary" style="padding: 6px 14px; font-size:13px;" onclick="editMember('${data.id}')">정보 수정</button>
+                                <button class="btn btn-secondary" style="padding: 6px 14px; font-size:13px; background-color:#ef4444; color:white; border:none;" onclick="deleteMember('${data.id}')">삭제</button>
+                            </div>
                         </div>
-                `;
+                    `;
                 });
                 listContainer.innerHTML = memberHTML;
             } catch(err) {
@@ -1086,18 +1133,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 document.getElementById('detail-content').innerHTML = detailContentStr;
 
-                // 수정/삭제 권한: 본인이 작성자이거나 (단순히 작성자 이름 비교) empId가 같거나
+                // 수정/삭제 권한: 본인이 작성자이거나 (단순히 작성자 이름 비교) empId가 같거나, 관리자인 경우
                 const authorCheck = (currentUser && currentUser.name === data.author);
                 const empIdCheck = (data.empId && currentUser && data.empId === currentUser.empId);
+                const adminCheck = (currentUser && currentUser.isAdmin);
                 
                 const deleteBtn = document.getElementById('btn-delete-post');
                 const editBtn = document.getElementById('btn-edit-post');
                 
-                if (deleteBtn) deleteBtn.style.display = (authorCheck || empIdCheck) ? 'inline-block' : 'none';
+                if (deleteBtn) deleteBtn.style.display = (authorCheck || empIdCheck || adminCheck) ? 'inline-block' : 'none';
                 if (editBtn) {
                     // 주요일정과 자유게시판 모두 수정 가능하게 하려면 여기서 조절. 일단 주요일정만 요청받았으므로 schedule인 경우에만 노출하거나 전체 허용.
                     // 자유게시판도 수정 기능이 있으면 좋으므로 전체 허용 (단, 수정 로직이 구현된 경우만)
-                    if (collectionName === 'schedule' && (authorCheck || empIdCheck)) {
+                    if (collectionName === 'schedule' && (authorCheck || empIdCheck || adminCheck)) {
                         editBtn.style.display = 'inline-block';
                         // 기존 리스너 제거 위해 클론 처리 (이벤트 중복 방지)
                         const newEditBtn = editBtn.cloneNode(true);
