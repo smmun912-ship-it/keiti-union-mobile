@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KEITI 노동조합</title>
+    <!-- 폰트: Pretendard -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+    <!-- 아이콘: FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 커스텀 스타일 -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="app" class="app-container">
+        
+        <!-- 1. 로그인 뷰 -->
+        <section id="login-view" class="view active">
+            <div class="login-wrapper">
+                <div class="logo-area">
+                    <div class="logo-icon"><i class="fa-solid fa-leaf"></i></div>
+                    <h1>KEITI 노동조합</h1>
+                    <p>노동조합원 전용 모바일 홈페이지</p>
+                </div>
+
+                <div class="login-form">
+                    <div class="input-group">
+                        <label for="userId">사번</label>
+                        <input type="text" id="userId" placeholder="사번을 입력해주세요">
+                    </div>
+                    <div class="input-group">
+                        <label for="userPw">비밀번호</label>
+                        <input type="password" id="userPw" placeholder="비밀번호를 입력해주세요">
+                    </div>
+                    <button id="login-btn" class="btn btn-primary btn-large">노조원 로그인</button>
+                    
+                    <div class="login-links">
+                        <a href="#">비밀번호 찾기</a>
+                        <span class="divider">|</span>
+                        <a href="#">조합원 가입 신청</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. 메인 앱 뷰 (로그인 후) -->
+        <section id="main-view" class="view">
+            <!-- 상단 헤더 -->
+            <header class="app-header">
+                <div class="header-logo">
+                    <i class="fa-solid fa-leaf"></i> KEITI 노조
+                </div>
+                <button class="icon-btn"><i class="fa-regular fa-bell"></i><span class="badge"></span></button>
+            </header>
+
+            <!-- 메인 컨텐츠 영역 -->
+            <main class="app-content">
+                
+                <!-- 홈 섹션 -->
+                <div id="section-home" class="content-section" style="display: block;">
+                    <!-- 히어로 카드 -->
+                    <div class="hero-card">
+                        <div class="hero-text">
+                            <h2>안녕하세요, <strong>홍길동</strong> 조합원님</h2>
+                            <p>오늘도 힘찬 하루 되세요!</p>
+                        </div>
+                        <div class="hero-illust">
+                            <i class="fa-solid fa-handshake-angle"></i>
+                        </div>
+                    </div>
+
+                    <!-- 퀵 메뉴 -->
+                    <div class="quick-menu">
+                        <div class="menu-item">
+                            <div class="menu-icon bg-blue"><i class="fa-solid fa-bullhorn"></i></div>
+                            <span>노조소식</span>
+                        </div>
+                        <div class="menu-item">
+                            <div class="menu-icon bg-green"><i class="fa-regular fa-comments"></i></div>
+                            <span>자유게시판</span>
+                        </div>
+                        <div class="menu-item">
+                            <div class="menu-icon bg-orange"><i class="fa-solid fa-file-arrow-down"></i></div>
+                            <span>서식다운</span>
+                        </div>
+                        <div class="menu-item">
+                            <div class="menu-icon bg-purple"><i class="fa-solid fa-clipboard-user"></i></div>
+                            <span>조합원혜택</span>
+                        </div>
+                    </div>
+
+                    <!-- 최근 소식 리스트 카드 -->
+                    <div class="card-section">
+                        <div class="section-header">
+                            <h3>최근 소식</h3>
+                            <a href="#" class="view-all">더보기 <i class="fa-solid fa-chevron-right"></i></a>
+                        </div>
+                        <div class="list-card">
+                            <div class="list-item">
+                                <div class="tag tag-primary">공지</div>
+                                <div class="item-content">
+                                    <h4>2026년 임금협상 진행 상황 안내</h4>
+                                    <span class="date">2026.03.14</span>
+                                </div>
+                            </div>
+                            <div class="list-item">
+                                <div class="tag tag-secondary">행사</div>
+                                <div class="item-content">
+                                    <h4>상반기 노사합동 체육대회 개최 안내</h4>
+                                    <span class="date">2026.03.10</span>
+                                </div>
+                            </div>
+                            <div class="list-item">
+                                <div class="tag tag-outline">안내</div>
+                                <div class="item-content">
+                                    <h4>노동조합원 온라인 의견수렴 참여 부탁드립니다.</h4>
+                                    <span class="date">2026.03.05</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 게시판 섹션 (기본 숨김) -->
+                <div id="section-board" class="content-section" style="display: none;">
+                    <div class="page-title">
+                        <h2>자유게시판</h2>
+                        <p>조합원들의 자유로운 의견 공간</p>
+                    </div>
+                    
+                    <div class="list-card">
+                        <!-- 게시글 아이템 -->
+                        <div class="board-item">
+                            <h4>휴게실 환경 개선 건의합니다.</h4>
+                            <div class="board-meta">
+                                <span>작성자: 김영희</span> · <span>오늘 10:30</span> · <span>조회 12</span>
+                            </div>
+                        </div>
+                        <div class="board-item">
+                            <h4>이번 주말 등산동호회 일정 문의</h4>
+                            <div class="board-meta">
+                                <span>작성자: 박철수</span> · <span>어제 15:20</span> · <span>조회 45</span>
+                            </div>
+                        </div>
+                        <div class="board-item">
+                            <h4>식당 메뉴 관련 설문조사 언제까지인가요?</h4>
+                            <div class="board-meta">
+                                <span>작성자: 이지은</span> · <span>2026.03.10</span> · <span>조회 88</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 글쓰기 플로팅 버튼 -->
+                    <button class="fab-btn"><i class="fa-solid fa-pen"></i></button>
+                </div>
+
+                <!-- 서식 다운로드 섹션 (기본 숨김) -->
+                <div id="section-download" class="content-section" style="display: none;">
+                    <div class="page-title">
+                        <h2>서식 다운로드</h2>
+                        <p>조합 활동에 필요한 서류 모음</p>
+                    </div>
+
+                    <div class="download-grid">
+                        <div class="download-card">
+                            <i class="fa-solid fa-file-pdf file-icon pdf"></i>
+                            <div class="desc">노동조합 가입신청서</div>
+                            <button class="btn-download"><i class="fa-solid fa-download"></i></button>
+                        </div>
+                        <div class="download-card">
+                            <i class="fa-solid fa-file-word file-icon word"></i>
+                            <div class="desc">경조사 지원금 신청서</div>
+                            <button class="btn-download"><i class="fa-solid fa-download"></i></button>
+                        </div>
+                        <div class="download-card">
+                            <i class="fa-solid fa-file-excel file-icon excel"></i>
+                            <div class="desc">동호회 지원비 청구 양식</div>
+                            <button class="btn-download"><i class="fa-solid fa-download"></i></button>
+                        </div>
+                        <div class="download-card">
+                            <i class="fa-solid fa-file-pdf file-icon pdf"></i>
+                            <div class="desc">근로시간 면제자 활동보고서</div>
+                            <button class="btn-download"><i class="fa-solid fa-download"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+
+            <!-- 하단 고정 탭 바 -->
+            <nav class="bottom-nav">
+                <a href="#" class="nav-item active" data-target="home">
+                    <i class="fa-solid fa-house"></i>
+                    <span>홈</span>
+                </a>
+                <a href="#" class="nav-item" data-target="board">
+                    <i class="fa-solid fa-list-ul"></i>
+                    <span>게시판</span>
+                </a>
+                <a href="#" class="nav-item" data-target="download">
+                    <i class="fa-solid fa-folder-arrow-down"></i>
+                    <span>서식다운</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fa-solid fa-user"></i>
+                    <span>내 정보</span>
+                </a>
+            </nav>
+        </section>
+    </div>
+
+    <!-- 스크립트 연결 -->
+    <script src="js/app.js"></script>
+</body>
+</html>
