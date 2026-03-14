@@ -57,6 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             loadBoardPosts();
                             loadNewsPosts();
                             loadBenefitsPosts();
+                            loadHomeRecentPosts();
                         } else {
                             // 아직 승인이 안됐거나 거절되었다면 강제 로그아웃 
                             await fb.signOut(fb.auth);
@@ -69,6 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         loadBoardPosts();
                         loadNewsPosts();
                         loadBenefitsPosts();
+                        loadHomeRecentPosts();
                     }
                 } catch(e) {
                     console.error("세션 복구 오류", e);
@@ -190,6 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             loadBoardPosts(); // 자유게시판 로드
                             loadNewsPosts();  // 노조 소식 로드
                             loadBenefitsPosts(); // 조합원 혜택 로드
+                            loadHomeRecentPosts(); // 홈 최근소식 통합 로드
                         } else if (userData.status === 'rejected') {
                             // 승인 거절
                             await fb.signOut(fb.auth);
@@ -208,6 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             loadBoardPosts();
                             loadNewsPosts();
                             loadBenefitsPosts();
+                            loadHomeRecentPosts();
                         } else {
                             await fb.signOut(fb.auth);
                             showAlert("회원 정보를 찾을 수 없습니다.");
@@ -437,35 +441,24 @@ document.addEventListener('DOMContentLoaded', () => {
             const q = fb.query(fb.collection(fb.db, "posts"), fb.orderBy("createdAt", "desc"));
             const querySnapshot = await fb.getDocs(q);
             
-            boardListContainer.innerHTML = ''; // 초기화
-            
-            const homeRecentContainer = document.getElementById('home-recent-posts');
-            if(homeRecentContainer && homeRecentContainer.innerHTML.includes('불러오는 중')) {
-                homeRecentContainer.innerHTML = ''; // 최초 로드시 초기화
-            }
+            boardListContainer.innerHTML = '';
 
             if(querySnapshot.empty) {
                 boardListContainer.innerHTML = '<div style="padding: 20px; text-align:center; color:#999;">작성된 게시글이 없습니다.</div>';
-                if(homeRecentContainer) {
-                    homeRecentContainer.innerHTML = '<div style="padding: 20px; text-align:center; color:#999;">최근 소식이 없습니다.</div>';
-                }
                 return;
             }
 
-            let postCount = 0;
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
-                // 날짜 포맷팅 로직
                 let dateStr = "";
                 if(data.createdAt) {
                     const dateObj = data.createdAt.toDate();
                     dateStr = `${dateObj.getFullYear()}.${String(dateObj.getMonth()+1).padStart(2,'0')}.${String(dateObj.getDate()).padStart(2,'0')}`;
                 }
 
-                // 자유게시판 항목 생성
                 const boardItem = document.createElement('div');
                 boardItem.className = 'board-item';
-                boardItem.style.cursor = 'pointer'; // 클릭 유도
+                boardItem.style.cursor = 'pointer';
                 boardItem.innerHTML = `
                     <h4>${escapeHtml(data.title)}</h4>
                     <div class="board-meta">
@@ -474,23 +467,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
                 boardItem.addEventListener('click', () => openPostDetail(doc.id, 'posts'));
                 boardListContainer.appendChild(boardItem);
-
-                // 홈 화면 최신글 바인딩 (최대 3개)
-                if (homeRecentContainer && postCount < 3) {
-                    const homeItem = document.createElement('div');
-                    homeItem.className = 'list-item';
-                    homeItem.style.cursor = 'pointer';
-                    homeItem.innerHTML = `
-                        <div class="tag tag-outline">자유</div>
-                        <div class="item-content">
-                            <h4>${escapeHtml(data.title)}</h4>
-                            <span class="date">${dateStr}</span>
-                        </div>
-                    `;
-                    homeItem.addEventListener('click', () => openPostDetail(doc.id, 'posts'));
-                    homeRecentContainer.appendChild(homeItem);
-                }
-                postCount++;
             });
         } catch(error) {
             console.error("게시글 불러오기 실패:", error);
@@ -529,6 +505,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     // 목록 최신화
                     await loadBoardPosts();
+                    await loadHomeRecentPosts();
                 } catch(error) {
                     console.error("게시글 작성 실패:", error);
                     showAlert("글 작성에 실패했습니다.");
@@ -579,13 +556,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // 노조소식 글 불러오기
     async function loadNewsPosts() {
         if(!window.keitiFirebase || !window.keitiFirebase.isInit) return;
-        
-        // 관리자 직위판별 (로직)
-        if(fabNewsBtn && currentUser && currentUser.isAdmin) {
-            fabNewsBtn.style.display = 'flex';
-        } else if(fabNewsBtn) {
-            fabNewsBtn.style.display = 'none';
-        }
 
         try {
             const fb = window.keitiFirebase;
@@ -593,19 +563,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const querySnapshot = await fb.getDocs(q);
             
             if(newsListContainer) newsListContainer.innerHTML = '';
-            
-            const homeRecentContainer = document.getElementById('home-recent-posts');
-            if(homeRecentContainer && homeRecentContainer.innerHTML.includes('불러오는 중')) {
-                homeRecentContainer.innerHTML = ''; // 최초 로드시 초기화
-            }
 
             if(querySnapshot.empty) {
                 if(newsListContainer) newsListContainer.innerHTML = '<div style="padding: 20px; text-align:center; color:#999;">작성된 노조 소식이 없습니다.</div>';
-                if(homeRecentContainer) homeRecentContainer.innerHTML = '<div style="padding: 20px; text-align:center; color:#999;">최근 소식이 없습니다.</div>';
                 return;
             }
 
-            let postCount = 0;
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
                 let dateStr = "";
@@ -628,22 +591,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     newsItem.addEventListener('click', () => openPostDetail(doc.id, 'news'));
                     newsListContainer.appendChild(newsItem);
                 }
-
-                if (homeRecentContainer && postCount < 3) {
-                    const homeNewsItem = document.createElement('div');
-                    homeNewsItem.className = 'list-item';
-                    homeNewsItem.style.cursor = 'pointer';
-                    homeNewsItem.innerHTML = `
-                        <div class="tag tag-primary">소식</div>
-                        <div class="item-content">
-                            <h4>${escapeHtml(data.title)}</h4>
-                            <span class="date">${dateStr}</span>
-                        </div>
-                    `;
-                    homeNewsItem.addEventListener('click', () => openPostDetail(doc.id, 'news'));
-                    homeRecentContainer.appendChild(homeNewsItem);
-                }
-                postCount++;
             });
         } catch(error) {
             console.error("소식 불러오기 실패:", error);
@@ -705,6 +652,79 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // ----------------------------------------------------
+    // 7. 홈 최근 소식 통합 로드 (posts + news + benefits 합산, 시간순 정렬)
+    // ----------------------------------------------------
+    async function loadHomeRecentPosts() {
+        const homeRecentContainer = document.getElementById('home-recent-posts');
+        if(!homeRecentContainer) return;
+        if(!window.keitiFirebase || !window.keitiFirebase.isInit) return;
+
+        const fb = window.keitiFirebase;
+        let allItems = [];
+
+        try {
+            // 자유게시판
+            const postsSnap = await fb.getDocs(fb.query(fb.collection(fb.db, "posts"), fb.orderBy("createdAt", "desc")));
+            postsSnap.forEach(doc => {
+                const d = doc.data();
+                allItems.push({ id: doc.id, collection: 'posts', tag: '자유', tagClass: 'tag-outline', ...d });
+            });
+
+            // 노조 소식
+            const newsSnap = await fb.getDocs(fb.query(fb.collection(fb.db, "news"), fb.orderBy("createdAt", "desc")));
+            newsSnap.forEach(doc => {
+                const d = doc.data();
+                allItems.push({ id: doc.id, collection: 'news', tag: '소식', tagClass: 'tag-primary', ...d });
+            });
+
+            // 조합원 혜택
+            const benefitsSnap = await fb.getDocs(fb.query(fb.collection(fb.db, "benefits"), fb.orderBy("createdAt", "desc")));
+            benefitsSnap.forEach(doc => {
+                const d = doc.data();
+                allItems.push({ id: doc.id, collection: 'benefits', tag: '혜택', tagClass: 'tag-primary" style="background-color:var(--accent-purple);color:white;', ...d });
+            });
+        } catch(e) {
+            console.error('홈 최근소식 로드 실패:', e);
+        }
+
+        // 시간순 정렬 (최신이 맨 위)
+        allItems.sort((a, b) => {
+            const timeA = a.createdAt ? a.createdAt.toDate().getTime() : 0;
+            const timeB = b.createdAt ? b.createdAt.toDate().getTime() : 0;
+            return timeB - timeA;
+        });
+
+        homeRecentContainer.innerHTML = '';
+
+        if(allItems.length === 0) {
+            homeRecentContainer.innerHTML = '<div style="padding: 20px; text-align:center; color:#999;">최근 소식이 없습니다.</div>';
+            return;
+        }
+
+        // 최대 5개만 표시
+        const displayItems = allItems.slice(0, 5);
+        displayItems.forEach(item => {
+            let dateStr = '';
+            if(item.createdAt) {
+                const dateObj = item.createdAt.toDate();
+                dateStr = `${dateObj.getFullYear()}.${String(dateObj.getMonth()+1).padStart(2,'0')}.${String(dateObj.getDate()).padStart(2,'0')}`;
+            }
+            const el = document.createElement('div');
+            el.className = 'list-item';
+            el.style.cursor = 'pointer';
+            el.innerHTML = `
+                <div class="tag ${item.tagClass}">${item.tag}</div>
+                <div class="item-content">
+                    <h4>${escapeHtml(item.title)}</h4>
+                    <span class="date">${dateStr}</span>
+                </div>
+            `;
+            el.addEventListener('click', () => openPostDetail(item.id, item.collection));
+            homeRecentContainer.appendChild(el);
+        });
+    }
+
     // 전역 상태: 현재 열려있는 게시글 정보 (삭제 기능 처리용)
     let currentOpenPostInfo = { id: null, collection: null };
 
@@ -764,9 +784,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 openModal('post-detail-modal');
 
-                // 리스트 배경 최신화를 위해 데이터 리로드 호출 (퍼포먼스 이슈 크지 않음)
+                // 리스트 배경 최신화를 위해 데이터 리로드 호출
                 if(collectionName === 'posts') loadBoardPosts();
                 if(collectionName === 'news') loadNewsPosts();
+                if(collectionName === 'benefits') loadBenefitsPosts();
+                loadHomeRecentPosts();
             } else {
                 showAlert("존재하지 않거나 삭제된 게시물입니다.");
             }
@@ -811,6 +833,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     closeModal('write-news-modal');
                     
                     await loadNewsPosts(); // 소식 리로드
+                    await loadHomeRecentPosts();
                 } catch(error) {
                     console.error("소식 작성 실패:", error);
                     showAlert("글 작성에 실패했습니다.");
@@ -859,6 +882,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     closeModal('write-benefits-modal');
                     
                     await loadBenefitsPosts();
+                    await loadHomeRecentPosts();
                 } catch(error) {
                     console.error("혜택 등록 실패:", error);
                     showAlert("혜택 등록에 실패했습니다.");
@@ -887,7 +911,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (currentOpenPostInfo.collection === 'posts') await loadBoardPosts();
                     if (currentOpenPostInfo.collection === 'news') await loadNewsPosts();
                     if (currentOpenPostInfo.collection === 'benefits') await loadBenefitsPosts();
-                    
+                    await loadHomeRecentPosts();
                     currentOpenPostInfo = { id: null, collection: null };
                 } catch(error) {
                     console.error("게시글 삭제 실패:", error);
