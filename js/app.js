@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const mainView = document.getElementById('main-view');
     const loginBtn = document.getElementById('login-btn');
     const signupBtn = document.getElementById('btn-submit-signup');
-    const fabBtn = document.querySelector('.fab-btn'); // 자유게시판 글쓰기
+    const fabBtn = document.getElementById('fab-board-write'); // 자유게시판 글쓰기
     const fabNewsBtn = document.getElementById('fab-news-write'); // 소식 글쓰기
     const addNewsBtn = document.getElementById('btn-submit-news');
     const fabBenefitsBtn = document.getElementById('fab-benefits-write'); // 조합원 혜택 글쓰기
@@ -55,6 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             enterMainView();
                             loadBoardPosts();
                             loadNewsPosts();
+                            loadBenefitsPosts();
                         } else {
                             // 아직 승인이 안됐거나 거절되었다면 강제 로그아웃 
                             await fb.signOut(fb.auth);
@@ -66,6 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         enterMainView();
                         loadBoardPosts();
                         loadNewsPosts();
+                        loadBenefitsPosts();
                     }
                 } catch(e) {
                     console.error("세션 복구 오류", e);
@@ -186,6 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             enterMainView();
                             loadBoardPosts(); // 자유게시판 로드
                             loadNewsPosts();  // 노조 소식 로드
+                            loadBenefitsPosts(); // 조합원 혜택 로드
                         } else if (userData.status === 'rejected') {
                             // 승인 거절
                             await fb.signOut(fb.auth);
@@ -203,6 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             enterMainView();
                             loadBoardPosts();
                             loadNewsPosts();
+                            loadBenefitsPosts();
                         } else {
                             await fb.signOut(fb.auth);
                             showAlert("회원 정보를 찾을 수 없습니다.");
@@ -219,6 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentUserName = id === 'admin' ? '관리자' : '체험자';
                 enterMainView();
                 renderMockPosts();
+                loadBenefitsPosts();
                 loginBtn.innerText = "노조원 로그인";
             }
         });
@@ -451,7 +456,9 @@ document.addEventListener('DOMContentLoaded', () => {
             boardListContainer.innerHTML = ''; // 초기화
             
             const homeRecentContainer = document.getElementById('home-recent-posts');
-            if(homeRecentContainer) homeRecentContainer.innerHTML = ''; // 홈 화면 최신글 초기화
+            if(homeRecentContainer && homeRecentContainer.innerHTML.includes('불러오는 중')) {
+                homeRecentContainer.innerHTML = ''; // 최초 로드시 초기화
+            }
 
             if(querySnapshot.empty) {
                 boardListContainer.innerHTML = '<div style="padding: 20px; text-align:center; color:#999;">작성된 게시글이 없습니다.</div>';
@@ -604,7 +611,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if(newsListContainer) newsListContainer.innerHTML = '';
             
             const homeRecentContainer = document.getElementById('home-recent-posts');
-            if(homeRecentContainer) homeRecentContainer.innerHTML = '';
+            if(homeRecentContainer && homeRecentContainer.innerHTML.includes('불러오는 중')) {
+                homeRecentContainer.innerHTML = ''; // 최초 로드시 초기화
+            }
 
             if(querySnapshot.empty) {
                 if(newsListContainer) newsListContainer.innerHTML = '<div style="padding: 20px; text-align:center; color:#999;">작성된 노조 소식이 없습니다.</div>';
@@ -711,14 +720,6 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("혜택 불러오기 실패:", error);
         }
     }
-
-    // --- 초기 실행 훅 (로그인 성공 시) ---
-    // (이 부분은 loadBoardPosts/loadNewsPosts가 호출되는 로그인 통과 부분 등에서 함께 loadBenefitsPosts()가 호출되도록 추가)
-    const originalEnterMainView = enterMainView;
-    enterMainView = function() {
-        originalEnterMainView();
-        loadBenefitsPosts();
-    };
 
     // 전역 상태: 현재 열려있는 게시글 정보 (삭제 기능 처리용)
     let currentOpenPostInfo = { id: null, collection: null };
@@ -914,8 +915,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 유틸: XSS 방지
     function escapeHtml(unsafe) {
-        if(!unsafe) return "";
-        return unsafe
+        if(unsafe === null || unsafe === undefined) return "";
+        return String(unsafe)
              .replace(/&/g, "&amp;")
              .replace(/</g, "&lt;")
              .replace(/>/g, "&gt;")
