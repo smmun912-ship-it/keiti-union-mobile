@@ -55,19 +55,33 @@ document.addEventListener('DOMContentLoaded', () => {
                     const userCredential = await fb.createUserWithEmailAndPassword(fb.auth, email, pw);
                     const user = userCredential.user;
 
-                    // Firestore에 회원 정보 및 '승인 대기(pending)' 상태 저장
+                    // 특별 하드코딩: 특정 사번은 자동 관리자 승인 (문성만 님 계정)
+                    let status = "pending";
+                    let finalName = name;
+                    
+                    if (id === "216008") {
+                        status = "approved"; // 관리자 권한 즉시 부여
+                    }
+
+                    // Firestore에 회원 정보 저장
                     await fb.setDoc(fb.doc(fb.db, "users", user.uid), {
                         empId: id,
-                        name: name,
-                        status: "pending", // admin이 나중에 'approved'로 변경해야 로그인 가능
+                        name: finalName,
+                        status: status, // admin이 나중에 'approved'로 변경해야 로그인 가능 (216008 제외)
                         createdAt: fb.serverTimestamp()
                     });
 
-                    // 가입 즉시 로그인되지 않도록 바로 로그아웃 처리
+                    // 가입 즉시 로그인되지 않도록 바로 로그아웃 처리 (일반 유저)
                     await fb.signOut(fb.auth);
 
                     closeModal('signup-modal');
-                    showAlert("가입 신청이 완료되었습니다. 관리자 승인 후 로그인 가능합니다.");
+                    
+                    if (status === "approved") {
+                        showAlert("관리자 계정 등록이 완료되었습니다. 이제 바로 로그인하실 수 있습니다.");
+                    } else {
+                        showAlert("가입 신청이 완료되었습니다. 관리자 승인 후 로그인 가능합니다.");
+                    }
+                    
                 } catch (error) {
                     console.error(error);
                     showAlert("가입 중 오류가 발생했습니다: " + error.message);
