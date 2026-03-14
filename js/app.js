@@ -1,11 +1,161 @@
+// 전역 모달 컨트롤 함수 (HTML inline onclick 사용)
+window.openModal = function(id) {
+    document.getElementById(id).classList.add('active');
+}
+window.closeModal = function(id) {
+    document.getElementById(id).classList.remove('active');
+}
+window.showAlert = function(msg) {
+    document.getElementById('alert-message').innerText = msg;
+    openModal('alert-modal');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-    
-    // === 뷰 전환 관련 ===
+    // === DOM 요소 ===
     const loginView = document.getElementById('login-view');
     const mainView = document.getElementById('main-view');
     const loginBtn = document.getElementById('login-btn');
+    const signupBtn = document.getElementById('btn-submit-signup');
+    const addPostBtn = document.getElementById('btn-submit-post');
+    const fabBtn = document.querySelector('.fab-btn');
 
-    // === 메인 페이지 내 섹션 전환 관련 ===
+    // === 상태 변수 ===
+    // 현재 세션의 유저 정보
+    let currentUser = null; 
+    let currentUserName = "조합원";
+
+    // === Firebase 연동이 안되어있을 때를 대비한 목업 데이터 ===
+    let mockPosts = [
+        { title: "식당 메뉴 관련 설문조사 언제까지인가요?", author: "이지은", date: "2026.03.10", views: 88 },
+        { title: "이번 주말 등산동호회 일정 문의", author: "박철수", date: "2026.03.13", views: 45 },
+        { title: "휴게실 환경 개선 건의합니다.", author: "김영희", date: "2026.03.14", views: 12 }
+    ];
+
+    // ----------------------------------------------------
+    // 1. 회원가입 로직 (Firebase Auth & Firestore)
+    // ----------------------------------------------------
+    if (signupBtn) {
+        signupBtn.addEventListener('click', async () => {
+            const id = document.getElementById('regId').value;
+            const name = document.getElementById('regName').value;
+            const pw = document.getElementById('regPw').value;
+
+            if(!id || !name || pw.length < 6) {
+                showAlert("모든 항목을 입력하고, 비밀번호는 6자리 이상 설정해주세요.");
+                return;
+            }
+
+            // [Firebase Mode]
+            if (window.keitiFirebase && window.keitiFirebase.isInit) {
+                try {
+                    // Firebase Auth는 Email 형식을 요구하므로 사번을 이메일로 가공
+                    const email = `${id}@keiti-union.test.com`;
+                    const fb = window.keitiFirebase;
+                    
+                    const userCredential = await fb.createUserWithEmailAndPassword(fb.auth, email, pw);
+                    const user = userCredential.user;
+
+                    // Firestore에 회원 정보 및 '승인 대기(pending)' 상태 저장
+                    await fb.setDoc(fb.doc(fb.db, "users", user.uid), {
+                        empId: id,
+                        name: name,
+                        status: "pending", // admin이 나중에 'approved'로 변경해야 로그인 가능
+                        createdAt: fb.serverTimestamp()
+                    });
+
+                    // 가입 즉시 로그인되지 않도록 바로 로그아웃 처리
+                    await fb.signOut(fb.auth);
+
+                    closeModal('signup-modal');
+                    showAlert("가입 신청이 완료되었습니다. 관리자 승인 후 로그인 가능합니다.");
+                } catch (error) {
+                    console.error(error);
+                    showAlert("가입 중 오류가 발생했습니다: " + error.message);
+                }
+            } else {
+                // [UI Mock Mode]
+                closeModal('signup-modal');
+                showAlert("[테스트 모드] 가입 신청 완료! (관리자 승인 대기)");
+            }
+        });
+    }
+
+    // ----------------------------------------------------
+    // 2. 로그인 로직 (Firebase Auth & Firestore 승인 체크)
+    // ----------------------------------------------------
+    if (loginBtn) {
+        loginBtn.addEventListener('click', async () => {
+            const id = document.getElementById('userId').value;
+            const pw = document.getElementById('userPw').value;
+            
+            if(!id || !pw) {
+                showAlert('사번과 비밀번호를 올바르게 입력해주세요.');
+                return;
+            }
+
+            loginBtn.innerText = "로그인 중...";
+
+            // [Firebase Mode]
+            if (window.keitiFirebase && window.keitiFirebase.isInit) {
+                try {
+                    const email = `${id}@keiti-union.test.com`;
+                    const fb = window.keitiFirebase;
+                    
+                    const userCredential = await fb.signInWithEmailAndPassword(fb.auth, email, pw);
+                    const user = userCredential.user;
+
+                    // Firestore에서 유저 상태(승인 여부) 확인
+                    const userDoc = await fb.getDoc(fb.doc(fb.db, "users", user.uid));
+                    
+                    if (userDoc.exists()) {
+                        const userData = userDoc.data();
+                        
+                        // 관리자가 수동으로 approved 변경한 경우만 통과
+                        if(userData.status === 'approved') {
+                            currentUser = userData;
+                            currentUserName = userData.name;
+                            enterMainView();
+                            loadBoardPosts(); // 뷰 전환 후 게시글 로드
+                        } else {
+                            // 승인 대기
+                            await fb.signOut(fb.auth);
+                            showAlert("아직 관리자 승인 대기 중입니다. 승인 후 이용해주세요.");
+                        }
+                    } else {
+                        await fb.signOut(fb.auth);
+                        showAlert("회원 정보를 찾을 수 없습니다.");
+                    }
+                } catch(error) {
+                    console.error(error);
+                    showAlert("로그인 실패. 사번이나 비밀번호를 확인해주세요.");
+                } finally {
+                    loginBtn.innerText = "노조원 로그인";
+                }
+            } else {
+                // [UI Mock Mode] 무조건 통과 (테스트 뷰어용)
+                currentUserName = id === 'admin' ? '관리자' : '체험자';
+                enterMainView();
+                renderMockPosts();
+                loginBtn.innerText = "노조원 로그인";
+            }
+        });
+    }
+
+    function enterMainView() {
+        // 홈 화면 이름 업데이트
+        const heroName = document.querySelector('.hero-text h2 strong');
+        if(heroName) heroName.innerText = currentUserName;
+
+        loginView.style.opacity = '0';
+        setTimeout(() => {
+            loginView.classList.remove('active');
+            mainView.classList.add('active');
+        }, 400); 
+    }
+
+    // ----------------------------------------------------
+    // 3. 네비게이션 탭 동작
+    // ----------------------------------------------------
     const navItems = document.querySelectorAll('.nav-item');
     const sections = {
         'home': document.getElementById('section-home'),
@@ -13,70 +163,175 @@ document.addEventListener('DOMContentLoaded', () => {
         'download': document.getElementById('section-download')
     };
 
-    // 1. 로그인 로직 (간단한 목업)
-    if (loginBtn) {
-        loginBtn.addEventListener('click', () => {
-            const id = document.getElementById('userId').value;
-            const pw = document.getElementById('userPw').value;
+    navItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            const target = item.getAttribute('data-target');
+            if(!target || !sections[target]) return;
+
+            // 라우팅 활성화 UI 반전
+            navItems.forEach(nav => nav.classList.remove('active'));
+            item.classList.add('active');
             
-            // ID, PW 입력만 확인
-            if(id && pw) {
-                // 로그인 화면 페이드아웃
-                loginView.style.opacity = '0';
-                setTimeout(() => {
-                    loginView.classList.remove('active');
-                    // 메인 화면 활성화
-                    mainView.classList.add('active');
-                }, 400); // CSS transition 시간에 맞춤
+            // 섹션 교체
+            Object.values(sections).forEach(sec => {
+                if(sec) {
+                    sec.style.display = 'none';
+                    sec.classList.remove('fade-in');
+                }
+            });
+            
+            sections[target].style.display = 'block';
+            setTimeout(() => {
+                sections[target].classList.add('fade-in');
+            }, 10);
+        });
+    });
+
+    // 퀵메뉴에서 탭 전환 유도
+    const quickMenus = document.querySelectorAll('.menu-item');
+    quickMenus.forEach((menu, index) => {
+        menu.addEventListener('click', () => {
+            // 자유게시판(index 1), 서식다운(index 2)
+            if(index === 1) document.querySelector('.nav-item[data-target="board"]').click();
+            else if(index === 2) document.querySelector('.nav-item[data-target="download"]').click();
+        });
+    });
+
+
+    // ----------------------------------------------------
+    // 4. 게시판 실시간 CRUD (Firestore)
+    // ----------------------------------------------------
+    const boardListContainer = document.querySelector('#section-board .list-card');
+    
+    // 플로팅 쓰기 버튼 이벤트
+    if(fabBtn) {
+        fabBtn.addEventListener('click', () => {
+            openModal('write-modal');
+        });
+    }
+
+    // 게시판 글 불러오기
+    async function loadBoardPosts() {
+        if(!window.keitiFirebase || !window.keitiFirebase.isInit) return;
+        
+        try {
+            const fb = window.keitiFirebase;
+            const q = fb.query(fb.collection(fb.db, "posts"), fb.orderBy("createdAt", "desc"));
+            const querySnapshot = await fb.getDocs(q);
+            
+            boardListContainer.innerHTML = ''; // 초기화
+            
+            if(querySnapshot.empty) {
+                boardListContainer.innerHTML = '<div style="padding: 20px; text-align:center; color:#999;">작성된 게시글이 없습니다.</div>';
+                return;
+            }
+
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                // 날짜 포맷팅 로직
+                let dateStr = "";
+                if(data.createdAt) {
+                    const dateObj = data.createdAt.toDate();
+                    dateStr = `${dateObj.getFullYear()}.${String(dateObj.getMonth()+1).padStart(2,'0')}.${String(dateObj.getDate()).padStart(2,'0')}`;
+                }
+
+                const postHtml = `
+                    <div class="board-item">
+                        <h4>${escapeHtml(data.title)}</h4>
+                        <div class="board-meta">
+                            <span>작성자: ${escapeHtml(data.author)}</span> · <span>${dateStr}</span> · <span>조회 ${data.views || 0}</span>
+                        </div>
+                    </div>
+                `;
+                boardListContainer.insertAdjacentHTML('beforeend', postHtml);
+            });
+        } catch(error) {
+            console.error("게시글 불러오기 실패:", error);
+        }
+    }
+
+    // 새 글 등록하기
+    if(addPostBtn) {
+        addPostBtn.addEventListener('click', async () => {
+            const title = document.getElementById('postTitle').value;
+            const content = document.getElementById('postContent').value;
+
+            if(!title || !content) {
+                showAlert("제목과 내용을 모두 입력해주세요.");
+                return;
+            }
+
+            addPostBtn.innerText = "등록 중...";
+
+            // [Firebase Mode]
+            if (window.keitiFirebase && window.keitiFirebase.isInit) {
+                try {
+                    const fb = window.keitiFirebase;
+                    await fb.addDoc(fb.collection(fb.db, "posts"), {
+                        title: title,
+                        content: content,
+                        author: currentUserName,
+                        views: 0,
+                        createdAt: fb.serverTimestamp()
+                    });
+                    
+                    document.getElementById('postTitle').value = '';
+                    document.getElementById('postContent').value = '';
+                    closeModal('write-modal');
+                    
+                    // 목록 최신화
+                    await loadBoardPosts();
+                } catch(error) {
+                    console.error("게시글 작성 실패:", error);
+                    showAlert("글 작성에 실패했습니다.");
+                } finally {
+                    addPostBtn.innerText = "등록하기";
+                }
             } else {
-                alert('사번과 비밀번호를 올바르게 입력해주세요.');
+                // [UI Mock Mode]
+                const today = new Date();
+                const dateStr = `${today.getFullYear()}.${String(today.getMonth()+1).padStart(2,'0')}.${String(today.getDate()).padStart(2,'0')}`;
+                
+                mockPosts.unshift({
+                    title: title, author: currentUserName, date: dateStr, views: 0
+                });
+                
+                document.getElementById('postTitle').value = '';
+                document.getElementById('postContent').value = '';
+                closeModal('write-modal');
+                renderMockPosts();
+                
+                addPostBtn.innerText = "등록하기";
             }
         });
     }
 
-    // 2. 하단 네비게이션 탭 동작
-    navItems.forEach(item => {
-        item.addEventListener('click', (e) => {
-            e.preventDefault();
-            
-            // 모든 탭의 active 클래스 제거
-            navItems.forEach(nav => nav.classList.remove('active'));
-            
-            // 클릭된 탭 활성화
-            item.classList.add('active');
-            
-            // 연결된 데이터 타겟(섹션) 가져오기
-            const target = item.getAttribute('data-target');
-            
-            if (target && sections[target]) {
-                // 모든 섹션 숨기기
-                Object.values(sections).forEach(sec => {
-                    if (sec) {
-                        sec.style.display = 'none';
-                        sec.classList.remove('fade-in');
-                    }
-                });
-                
-                // 타겟 섹션만 보여주기
-                sections[target].style.display = 'block';
-                
-                // 약간의 지연 후 애니메이션 위해 클래스 추가 (Reflow 유도)
-                setTimeout(() => {
-                    sections[target].classList.add('fade-in');
-                }, 10);
-            }
+    // 목업 렌더링 함수
+    function renderMockPosts() {
+        if(!boardListContainer) return;
+        boardListContainer.innerHTML = '';
+        mockPosts.forEach(post => {
+            const postHtml = `
+                    <div class="board-item">
+                        <h4>${escapeHtml(post.title)}</h4>
+                        <div class="board-meta">
+                            <span>작성자: ${escapeHtml(post.author)}</span> · <span>${post.date}</span> · <span>조회 ${post.views}</span>
+                        </div>
+                    </div>
+            `;
+            boardListContainer.insertAdjacentHTML('beforeend', postHtml);
         });
-    });
+    }
 
-    // 3. 퀵메뉴에서 탭 전환 유도
-    const quickMenus = document.querySelectorAll('.menu-item');
-    quickMenus.forEach((menu, index) => {
-        menu.addEventListener('click', () => {
-            if(index === 1) { // 자유게시판 클릭 시
-                document.querySelector('.nav-item[data-target="board"]').click();
-            } else if (index === 2) { // 서식다운 클릭 시
-                document.querySelector('.nav-item[data-target="download"]').click();
-            }
-        });
-    });
+    // 유틸: XSS 방지
+    function escapeHtml(unsafe) {
+        if(!unsafe) return "";
+        return unsafe
+             .replace(/&/g, "&amp;")
+             .replace(/</g, "&lt;")
+             .replace(/>/g, "&gt;")
+             .replace(/"/g, "&quot;")
+             .replace(/'/g, "&#039;");
+    }
 });

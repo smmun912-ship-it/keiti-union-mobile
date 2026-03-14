@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- 커스텀 스타일 -->
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/modal.css">
 </head>
 <body>
     <div id="app" class="app-container">
@@ -37,7 +38,7 @@
                     <div class="login-links">
                         <a href="#">비밀번호 찾기</a>
                         <span class="divider">|</span>
-                        <a href="#">조합원 가입 신청</a>
+                        <a href="#" onclick="openModal('signup-modal')">조합원 가입 신청</a>
                     </div>
                 </div>
             </div>
@@ -207,9 +208,74 @@
                 </a>
             </nav>
         </section>
+
+        <!-- === Modal Overylays === -->
+        
+        <!-- 1. 로그인 실패 / 승인 대기 알림 모달 -->
+        <div id="alert-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>알림</h3>
+                    <button class="btn-close" onclick="closeModal('alert-modal')"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="modal-body">
+                    <p id="alert-message" style="text-align:center; padding: 20px 0; color:var(--text-secondary);"></p>
+                    <button class="btn btn-primary" onclick="closeModal('alert-modal')" style="margin-top:20px;">확인</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. 회원가입 모달 -->
+        <div id="signup-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>조합원 가입 신청</h3>
+                    <button class="btn-close" onclick="closeModal('signup-modal')"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="regId">사번 (로그인 ID로 사용됩니다)</label>
+                        <input type="text" id="regId" placeholder="예: 20261234">
+                    </div>
+                    <div class="form-group">
+                        <label for="regName">이름</label>
+                        <input type="text" id="regName" placeholder="실명을 입력해주세요">
+                    </div>
+                    <div class="form-group">
+                        <label for="regPw">비밀번호</label>
+                        <input type="password" id="regPw" placeholder="6자리 이상">
+                    </div>
+                    <button id="btn-submit-signup" class="btn btn-primary" style="margin-top:10px;">가입 신청하기</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. 게시판 글쓰기 모달 -->
+        <div id="write-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>새 글 등록</h3>
+                    <button class="btn-close" onclick="closeModal('write-modal')"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="postTitle">제목</label>
+                        <input type="text" id="postTitle" placeholder="제목을 입력하세요">
+                    </div>
+                    <div class="form-group">
+                        <label for="postContent">내용</label>
+                        <textarea id="postContent" placeholder="자유롭게 의견을 남겨주세요"></textarea>
+                    </div>
+                    <button id="btn-submit-post" class="btn btn-primary" style="margin-top:10px;">등록하기</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- 스크립트 연결 -->
+    <!-- Firebase SDK (모듈 방식 지원 최신 브라우저용) -->
+    <script type="module" src="js/firebase-config.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>
