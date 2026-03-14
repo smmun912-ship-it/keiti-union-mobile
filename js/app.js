@@ -57,6 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             loadBoardPosts();
                             loadNewsPosts();
                             loadBenefitsPosts();
+                            loadSchedulePosts(); // 추가
                             loadHomeRecentPosts();
                         } else {
                             // 아직 승인이 안됐거나 거절되었다면 강제 로그아웃 
@@ -70,6 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         loadBoardPosts();
                         loadNewsPosts();
                         loadBenefitsPosts();
+                        loadSchedulePosts(); // 추가
                         loadHomeRecentPosts();
                     }
                 } catch(e) {
@@ -149,14 +151,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-
-    const fabGalleryBtn = document.getElementById('fab-gallery-upload');
-    if(fabGalleryBtn) {
-        fabGalleryBtn.addEventListener('click', () => {
-            showAlert('사진 업로드 기능은 준비 중입니다. (Firebase Storage 연동 전)');
-        });
-    }
-
     // ----------------------------------------------------
     // 2. 로그인 로직 (Firebase Auth & Firestore 승인 체크)
     // ----------------------------------------------------
@@ -201,6 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             loadBoardPosts(); // 자유게시판 로드
                             loadNewsPosts();  // 노조 소식 로드
                             loadBenefitsPosts(); // 조합원 혜택 로드
+                            loadSchedulePosts(); // 주요일정 로드
                             loadHomeRecentPosts(); // 홈 최근소식 통합 로드
                         } else if (userData.status === 'rejected') {
                             // 승인 거절
@@ -220,6 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             loadBoardPosts();
                             loadNewsPosts();
                             loadBenefitsPosts();
+                            loadSchedulePosts(); // 추가
                             loadHomeRecentPosts();
                         } else {
                             await fb.signOut(fb.auth);
@@ -238,6 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 enterMainView();
                 renderMockPosts();
                 loadBenefitsPosts();
+                loadSchedulePosts(); // 추가
                 loginBtn.innerText = "로그인";
             }
         });
@@ -315,6 +312,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if(fabBtn) fabBtn.style.display = (target === 'board') ? 'flex' : 'none';
         if(fabNewsBtn) fabNewsBtn.style.display = (target === 'news' && currentUser && currentUser.isAdmin) ? 'flex' : 'none';
         if(fabBenefitsBtn) fabBenefitsBtn.style.display = (target === 'benefits' && currentUser && currentUser.isAdmin) ? 'flex' : 'none';
+        
+        const fabScheduleBtn = document.getElementById('fab-schedule-write');
+        if(fabScheduleBtn) fabScheduleBtn.style.display = (target === 'schedule' && currentUser && currentUser.isAdmin) ? 'flex' : 'none';
         
         const fabGalleryBtn = document.getElementById('fab-gallery-upload');
         if(fabGalleryBtn) {
@@ -559,12 +559,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div style="font-size: 13px; color: var(--text-secondary);">
                                     사번: ${escapeHtml(data.empId)} | 부서: ${escapeHtml(data.dept || '미지정')}
                                 </div>
-                            </div>
-                            <div style="font-size: 12px; color: var(--text-light); white-space: nowrap;">
-                                가입일: ${dateStr}
-                            </div>
                         </div>
-                    `;
+                `;
                 });
                 listContainer.innerHTML = memberHTML;
             } catch(err) {
@@ -576,7 +572,127 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    const btnSubmitBenefits = document.getElementById('btn-submit-benefits');
+    if(btnSubmitBenefits) {
+        btnSubmitBenefits.addEventListener('click', async () => {
+            if(!currentUser || !currentUser.isAdmin) {
+                showAlert('관리자 권한이 필요합니다.');
+                return;
+            }
+            const title = document.getElementById('benefitsTitle').value.trim();
+            const content = document.getElementById('benefitsContent').value.trim();
+            if(!title || !content) {
+                showAlert('제목과 내용을 모두 입력해주세요.');
+                return;
+            }
+            btnSubmitBenefits.innerText = "등록 중...";
+            try {
+                if(window.keitiFirebase && window.keitiFirebase.isInit) {
+                    const fb = window.keitiFirebase;
+                    await fb.addDoc(fb.collection(fb.db, "benefits"), {
+                        title: title,
+                        content: content,
+                        author: currentUser.name || currentUserName || "관리자",
+                        empId: currentUser.empId,
+                        views: 0,
+                        createdAt: fb.serverTimestamp()
+                    });
+                }
+                closeModal('write-benefits-modal');
+                showAlert('조합원 혜택 안내가 등록되었습니다.');
+                loadBenefitsPosts();
+                loadHomeRecentPosts();
+            } catch(error) {
+                console.error("혜택 등록 에러:", error);
+                showAlert('혜택 등록에 실패했습니다.');
+            } finally {
+                btnSubmitBenefits.innerText = "혜택 등록하기";
+            }
+        });
+    }
 
+    const btnSubmitSchedule = document.getElementById('btn-submit-schedule');
+    if(btnSubmitSchedule) {
+        btnSubmitSchedule.addEventListener('click', async () => {
+            if(!currentUser || !currentUser.isAdmin) {
+                showAlert('관리자 권한이 필요합니다.');
+                return;
+            }
+            const title = document.getElementById('scheduleTitle').value.trim();
+            const content = document.getElementById('scheduleContent').value.trim();
+            if(!title || !content) {
+                showAlert('제목과 내용을 모두 입력해주세요.');
+                return;
+            }
+            btnSubmitSchedule.innerText = "등록 중...";
+            try {
+                if(window.keitiFirebase && window.keitiFirebase.isInit) {
+                    const fb = window.keitiFirebase;
+                    await fb.addDoc(fb.collection(fb.db, "schedule"), {
+                        title: title,
+                        content: content,
+                        author: currentUser.name || currentUserName || "관리자",
+                        empId: currentUser.empId,
+                        views: 0,
+                        createdAt: fb.serverTimestamp()
+                    });
+                }
+                closeModal('write-schedule-modal');
+                showAlert('주요일정이 등록되었습니다.');
+                loadSchedulePosts();
+                loadHomeRecentPosts();
+            } catch(error) {
+                console.error("일정 등록 에러:", error);
+                showAlert('일정 등록에 실패했습니다.');
+            } finally {
+                btnSubmitSchedule.innerText = "일정 등록하기";
+            }
+        });
+    }
+
+    async function loadSchedulePosts() {
+        const container = document.getElementById('schedule-list-container');
+        if(!container) return;
+        
+        if (window.keitiFirebase && window.keitiFirebase.isInit) {
+            try {
+                const fb = window.keitiFirebase;
+                const q = fb.query(fb.collection(fb.db, "schedule"), fb.orderBy("createdAt", "desc"));
+                const querySnapshot = await fb.getDocs(q);
+                
+                container.innerHTML = '';
+                if(querySnapshot.empty) {
+                    container.innerHTML = '<div style="padding: 20px; text-align:center; color:#999;">등록된 일정이 없습니다.</div>';
+                    return;
+                }
+                
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    let dateStr = "날짜 없음";
+                    if(data.createdAt) {
+                        const dateObj = data.createdAt.toDate();
+                        dateStr = `${dateObj.getFullYear()}.${String(dateObj.getMonth()+1).padStart(2,'0')}.${String(dateObj.getDate()).padStart(2,'0')}`;
+                    }
+                    
+                    const postHTML = `
+                        <div class="list-item" onclick="viewPostDetail('${doc.id}', 'schedule')" style="cursor:pointer;">
+                            <div class="tag tag-outline">일정</div>
+                            <div class="item-content" style="flex:1;">
+                                <h4>${escapeHtml(data.title)}</h4>
+                                <div class="date">${escapeHtml(data.author)} · ${dateStr} · 조회 ${data.views || 0}</div>
+                            </div>
+                        </div>
+                    `;
+                    container.insertAdjacentHTML('beforeend', postHTML);
+                });
+            } catch(error) {
+                console.error("주요일정 로드 에러:", error);
+                container.innerHTML = '<div style="padding: 20px; text-align:center; color:#ef4444;">데이터를 불러오는 데 실패했습니다.</div>';
+            }
+        } else {
+            container.innerHTML = '<div style="padding: 20px; text-align:center; color:#999;">[오프라인 테스트] 일정이 없습니다.</div>';
+        }
+    }
 
     // ----------------------------------------------------
     // 4. 게시판 실시간 CRUD (Firestore)
@@ -946,6 +1062,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(collectionName === 'posts') loadBoardPosts();
                 if(collectionName === 'news') loadNewsPosts();
                 if(collectionName === 'benefits') loadBenefitsPosts();
+                if(collectionName === 'schedule') loadSchedulePosts();
                 loadHomeRecentPosts();
             } else {
                 showAlert("존재하지 않거나 삭제된 게시물입니다.");
@@ -1007,7 +1124,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // ----------------------------------------------------
     if(fabBenefitsBtn) {
         fabBenefitsBtn.addEventListener('click', () => {
+            document.getElementById('benefitsTitle').value = '';
+            document.getElementById('benefitsContent').value = '';
             openModal('write-benefits-modal');
+        });
+    }
+
+    const fabScheduleBtn = document.getElementById('fab-schedule-write');
+    if(fabScheduleBtn) {
+        fabScheduleBtn.addEventListener('click', () => {
+            document.getElementById('scheduleTitle').value = '';
+            document.getElementById('scheduleContent').value = '';
+            openModal('write-schedule-modal');
         });
     }
 
