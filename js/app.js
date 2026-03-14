@@ -150,6 +150,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const fabGalleryBtn = document.getElementById('fab-gallery-upload');
+    if(fabGalleryBtn) {
+        fabGalleryBtn.addEventListener('click', () => {
+            showAlert('사진 업로드 기능은 준비 중입니다. (Firebase Storage 연동 전)');
+        });
+    }
+
     // ----------------------------------------------------
     // 2. 로그인 로직 (Firebase Auth & Firestore 승인 체크)
     // ----------------------------------------------------
@@ -308,6 +315,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if(fabBtn) fabBtn.style.display = (target === 'board') ? 'flex' : 'none';
         if(fabNewsBtn) fabNewsBtn.style.display = (target === 'news' && currentUser && currentUser.isAdmin) ? 'flex' : 'none';
         if(fabBenefitsBtn) fabBenefitsBtn.style.display = (target === 'benefits' && currentUser && currentUser.isAdmin) ? 'flex' : 'none';
+        
+        const fabGalleryBtn = document.getElementById('fab-gallery-upload');
+        if(fabGalleryBtn) {
+            // 활동사진 업로드는 관리자만 가능하도록 설정. 필요시 조건 변경 가능.
+            fabGalleryBtn.style.display = (target === 'gallery' && currentUser && currentUser.isAdmin) ? 'flex' : 'none';
+        }
 
         if (target === 'myinfo') renderMyInfo();
         if (target === 'admin-members') loadApprovedMembers();
@@ -338,14 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- 홈 화면 퀵메뉴 클릭 이벤트 연결 ---
-    const quickMenuItems = document.querySelectorAll('.quick-menu .menu-item');
-    if(quickMenuItems.length >= 4) {
-        quickMenuItems[0].addEventListener('click', () => showSection('news'));
-        quickMenuItems[1].addEventListener('click', () => showSection('board'));
-        quickMenuItems[2].addEventListener('click', () => showSection('download'));
-        quickMenuItems[3].addEventListener('click', () => showSection('benefits'));
-    }
+    // --- 홈 화면 퀵메뉴 로직은 index.html의 onclick 속성으로 대체됨 ---
 
     // --- 내 정보 & 로그아웃 & 승인 로직 ---
     const btnEditDept = document.getElementById('btn-edit-dept');
