@@ -24,12 +24,12 @@ import {
 
 // TODO: Replace the following with your app's Firebase project configuration
 const firebaseConfig = {
-    // apiKey: "YOUR_API_KEY",
-    // authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    // projectId: "YOUR_PROJECT_ID",
-    // storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    // messagingSenderId: "123456789",
-    // appId: "1:12345:web:abcd"
+  apiKey: "AIzaSyCSp9WI8yVtBZrpY80ILAmMutP_sVKmpdc",
+  authDomain: "keiti-union.firebaseapp.com",
+  projectId: "keiti-union",
+  storageBucket: "keiti-union.firebasestorage.app",
+  messagingSenderId: "1061152447961",
+  appId: "1:1061152447961:web:45f7f46f24982dfaf0cdc8"
 };
 
 // 1. Firebase 초기화 (키가 없으면 Mock 모드로 동작하도록 안전장치)
