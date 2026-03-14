@@ -391,12 +391,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if(window.keitiFirebase && window.keitiFirebase.isInit) {
             const fb = window.keitiFirebase;
             try {
-                await fb.setDoc(fb.doc(fb.db, "users", docId), { status: 'approved' }, { merge: true });
-                showAlert("승인 완료되었습니다.");
+                const docRef = fb.doc(fb.db, "users", docId);
+                await fb.updateDoc(docRef, { status: 'approved' });
+                
+                // 승인이 실제로 DB에 반영되었는지 검증
+                const verifySnap = await fb.getDoc(docRef);
+                if(verifySnap.exists() && verifySnap.data().status === 'approved') {
+                    showAlert("승인 완료되었습니다. (" + (verifySnap.data().name || docId) + ")");
+                } else {
+                    showAlert("⚠️ 승인 요청은 전송되었으나 DB 반영 확인에 실패했습니다. 다시 시도해주세요.");
+                }
                 renderMyInfo(); // 리스트 새로고침
             } catch(err) {
-                console.error("승인 처리 실패", err);
-                showAlert("승인 처리에 실패했습니다.");
+                console.error("승인 처리 실패:", err.code, err.message, err);
+                if(err.code === 'permission-denied') {
+                    showAlert("권한이 부족합니다. Firebase Firestore 보안 규칙을 확인해주세요.");
+                } else {
+                    showAlert("승인 처리에 실패했습니다: " + err.message);
+                }
             }
         }
     }
@@ -408,12 +420,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if(window.keitiFirebase && window.keitiFirebase.isInit) {
             const fb = window.keitiFirebase;
             try {
-                await fb.setDoc(fb.doc(fb.db, "users", docId), { status: 'rejected' }, { merge: true });
+                const docRef = fb.doc(fb.db, "users", docId);
+                await fb.updateDoc(docRef, { status: 'rejected' });
                 showAlert("가입이 거절되었습니다.");
                 renderMyInfo(); // 리스트 새로고침
             } catch(err) {
-                console.error("거절 처리 실패", err);
-                showAlert("거절 처리에 실패했습니다.");
+                console.error("거절 처리 실패:", err.code, err.message, err);
+                if(err.code === 'permission-denied') {
+                    showAlert("권한이 부족합니다. Firebase Firestore 보안 규칙을 확인해주세요.");
+                } else {
+                    showAlert("거절 처리에 실패했습니다: " + err.message);
+                }
             }
         }
     }
