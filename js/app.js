@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             currentUser = userData;
                             // 과거 가입으로 DB에 role/isAdmin 이 없는 경우 강제 부여
                             if (id === "216008") {
-                                currentUser.role = currentUser.role || "사무처장";
+                                currentUser.role = currentUser.role || "부위원장";
                                 currentUser.isAdmin = true;
                             }
                             
@@ -150,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         // DB에 문서가 없어도 특별 계정인 경우 무사 통과
                         if (id === "216008") {
-                            currentUser = { empId: "216008", name: "관리자", role: "사무처장", isAdmin: true, status: "approved" };
+                            currentUser = { empId: "216008", name: "관리자", role: "부위원장", isAdmin: true, status: "approved" };
                             currentUserName = "관리자";
                             enterMainView();
                             loadBoardPosts();
