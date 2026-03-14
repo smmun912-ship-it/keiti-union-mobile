@@ -348,6 +348,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- 내 정보 & 로그아웃 & 승인 로직 ---
+    const btnEditDept = document.getElementById('btn-edit-dept');
+    if(btnEditDept) {
+        btnEditDept.addEventListener('click', async () => {
+            if(!currentUser) return;
+            const newDept = prompt("변경할 소속부서를 입력해주세요.", currentUser.dept || "");
+            if(newDept !== null && newDept.trim() !== "") {
+                if(window.keitiFirebase && window.keitiFirebase.isInit) {
+                    try {
+                        const fb = window.keitiFirebase;
+                        const userRef = fb.doc(fb.db, "users", fb.auth.currentUser.uid);
+                        await fb.updateDoc(userRef, { dept: newDept.trim() });
+                        currentUser.dept = newDept.trim();
+                        renderMyInfo();
+                        showAlert("소속부서가 성공적으로 변경되었습니다.");
+                    } catch(err) {
+                        console.error("부서 변경 실패:", err);
+                        showAlert("부서 변경에 실패했습니다. 권한이 부족하거나 통신 오류일 수 있습니다.");
+                    }
+                } else {
+                    currentUser.dept = newDept.trim();
+                    renderMyInfo();
+                    showAlert("[테스트 모드] 소속부서 변경 완료");
+                }
+            }
+        });
+    }
+
     const btnLogout = document.getElementById('btn-logout');
     if(btnLogout) {
         btnLogout.addEventListener('click', async () => {
@@ -489,8 +516,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if(window.keitiFirebase && window.keitiFirebase.isInit) {
             const fb = window.keitiFirebase;
             try {
-                // 승인된 전체 회원 조회
-                const q = fb.query(fb.collection(fb.db, "users"), fb.where("status", "==", "approved"), fb.orderBy("createdAt", "desc"));
+                // 승인된 회원만 조회 후 JS 메모리 상에서 정렬 (Firestore 인덱스 오류 회피)
+                const q = fb.query(fb.collection(fb.db, "users"), fb.where("status", "==", "approved"));
                 const querySnapshot = await fb.getDocs(q);
                 listContainer.innerHTML = '';
                 
@@ -498,10 +525,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     listContainer.innerHTML = '<div style="padding: 20px; text-align:center; color:#999;">가입된 조합원이 없습니다.</div>';
                     return;
                 }
+
+                let allMembers = [];
+                querySnapshot.forEach((docSnap) => {
+                    allMembers.push({ id: docSnap.id, ...docSnap.data() });
+                });
+
+                allMembers.sort((a, b) => {
+                    const timeA = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt).getTime()) : 0;
+                    const timeB = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt).getTime()) : 0;
+                    return timeB - timeA;
+                });
                 
                 let memberHTML = '';
-                querySnapshot.forEach((docSnap) => {
-                    const data = docSnap.data();
+                allMembers.forEach((data) => {
                     let dateStr = "알 수 없음";
                     if(data.createdAt) {
                         const dateObj = data.createdAt.toDate();
