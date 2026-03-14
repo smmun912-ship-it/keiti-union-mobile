@@ -114,7 +114,7 @@
                     </div>
                     
                     <!-- 노조소식 글쓰기 플로팅 버튼 (관리자 전용) -->
-                    <button id="fab-news-write" class="fab-btn bg-blue" style="display:none;"><i class="fa-solid fa-pen"></i></button>
+                    <button id="fab-news-write" class="fab-btn" style="display:none;"><i class="fa-solid fa-pen"></i></button>
                 </div>
 
                 <!-- 게시판 섹션 (기본 숨김) -->
@@ -179,6 +179,21 @@
                             <button class="btn-download" onclick="showAlert('현재 샘플 파일이 등록되지 않았습니다. (Firebase Storage 연동 전)')"><i class="fa-solid fa-download"></i></button>
                         </div>
                     </div>
+                </div>
+
+                <!-- 조합원 혜택 섹션 (기본 숨김) -->
+                <div id="section-benefits" class="content-section" style="display: none;">
+                    <div class="page-title">
+                        <h2>조합원 혜택</h2>
+                        <p>한국환경산업기술원 조합원들을 위한 제휴 및 지원 혜택</p>
+                    </div>
+                    
+                    <div class="list-card" id="benefits-list-container">
+                        <div style="padding: 20px; text-align:center; color:#999;">등록된 혜택 안내가 없습니다.</div>
+                    </div>
+                    
+                    <!-- 조합원 혜택 글쓰기 플로팅 버튼 (관리자 전용) -->
+                    <button id="fab-benefits-write" class="fab-btn" style="display:none;"><i class="fa-solid fa-pen"></i></button>
                 </div>
 
         <!-- 4. 내 정보 탭 -->
@@ -329,7 +344,28 @@
                         <label for="newsContent">내용</label>
                         <textarea id="newsContent" placeholder="핵심 소식을 전달해주세요" style="height:150px;"></textarea>
                     </div>
-                    <button id="btn-submit-news" class="btn btn-primary btn-large" style="margin-top:10px; background-color:var(--primary-blue); width:100%;">소식 발행하기</button>
+                    <button id="btn-submit-news" class="btn btn-primary btn-large" style="margin-top:10px; width:100%;">소식 발행하기</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 조합원 혜택 글 모달 (관리자 전용) -->
+        <div id="write-benefits-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 style="color:var(--primary-blue);">조합원 혜택 작성</h3>
+                    <button class="btn-close" onclick="closeModal('write-benefits-modal')"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="benefitsTitle">제목</label>
+                        <input type="text" id="benefitsTitle" placeholder="혜택 안내 제목">
+                    </div>
+                    <div class="form-group">
+                        <label for="benefitsContent">제휴 및 혜택 내용</label>
+                        <textarea id="benefitsContent" placeholder="조합원들에게 제공되는 혜택을 적어주세요" style="height:150px;"></textarea>
+                    </div>
+                    <button id="btn-submit-benefits" class="btn btn-primary btn-large" style="margin-top:10px; width:100%;">혜택 등록하기</button>
                 </div>
             </div>
         </div>
@@ -347,7 +383,11 @@
                         날짜: <span id="detail-date"></span><span style="margin:0 8px;">|</span>조회: <span id="detail-views"></span>
                     </div>
                     <div id="detail-content" style="min-height: 150px; font-size:14px; color:var(--text-main); line-height:1.6;">내용</div>
-                    <button class="btn btn-primary btn-large" style="margin-top:20px; width:100%;" onclick="closeModal('post-detail-modal')">닫기</button>
+                    
+                    <div style="display:flex; gap:10px; margin-top:20px;">
+                        <button id="btn-delete-post" class="btn btn-secondary btn-large" style="display:none; width:30%; background-color:#ef4444; color:white;">삭제</button>
+                        <button class="btn btn-primary btn-large" style="flex:1;" onclick="closeModal('post-detail-modal')">닫기</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -356,7 +396,7 @@
 
     <!-- 스크립트 연결 -->
     <!-- Firebase SDK (모듈 방식 지원 최신 브라우저용) -->
-    <script type="module" src="js/firebase-config.js?v=2"></script>
-    <script src="js/app.js?v=2"></script>
+    <script type="module" src="js/firebase-config.js?v=3"></script>
+    <script src="js/app.js?v=3"></script>
 </body>
 </html>

@@ -16,10 +16,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const mainView = document.getElementById('main-view');
     const loginBtn = document.getElementById('login-btn');
     const signupBtn = document.getElementById('btn-submit-signup');
-    const addPostBtn = document.getElementById('btn-submit-post');
     const fabBtn = document.querySelector('.fab-btn'); // 자유게시판 글쓰기
     const fabNewsBtn = document.getElementById('fab-news-write'); // 소식 글쓰기
     const addNewsBtn = document.getElementById('btn-submit-news');
+    const fabBenefitsBtn = document.getElementById('fab-benefits-write'); // 조합원 혜택 글쓰기
+    const addBenefitsBtn = document.getElementById('btn-submit-benefits');
 
     // === 상태 변수 ===
     // 현재 세션의 유저 정보
@@ -250,38 +251,50 @@ document.addEventListener('DOMContentLoaded', () => {
         'board': document.getElementById('section-board'),
         'download': document.getElementById('section-download'),
         'myinfo': document.getElementById('section-myinfo'),
-        'news': document.getElementById('section-news')
+        'news': document.getElementById('section-news'),
+        'benefits': document.getElementById('section-benefits')
+    };
+
+    window.showSection = function(target) {
+        if(!sections[target]) return;
+        
+        // 라우팅 활성화 UI 반전
+        navItems.forEach(nav => nav.classList.remove('active'));
+        const targetNav = document.querySelector(`.nav-item[data-target='${target}']`);
+        if(targetNav) targetNav.classList.add('active');
+        
+        // 섹션 교체
+        Object.values(sections).forEach(sec => {
+            if(sec) {
+                sec.style.display = 'none';
+                sec.classList.remove('fade-in');
+            }
+        });
+        
+        sections[target].style.display = 'block';
+        setTimeout(() => {
+            sections[target].classList.add('fade-in');
+        }, 10);
+
+        if (target === 'myinfo') renderMyInfo();
     };
 
     navItems.forEach(item => {
         item.addEventListener('click', (e) => {
             e.preventDefault();
             const target = item.getAttribute('data-target');
-            if(!target || !sections[target]) return;
-
-            // 라우팅 활성화 UI 반전
-            navItems.forEach(nav => nav.classList.remove('active'));
-            item.classList.add('active');
-            
-            // 섹션 교체
-            Object.values(sections).forEach(sec => {
-                if(sec) {
-                    sec.style.display = 'none';
-                    sec.classList.remove('fade-in');
-                }
-            });
-            
-            sections[target].style.display = 'block';
-            setTimeout(() => {
-                sections[target].classList.add('fade-in');
-            }, 10);
-
-            // 내 정보 탭 열릴 때 데이터 바인딩
-            if (target === 'myinfo') {
-                renderMyInfo();
-            }
+            showSection(target);
         });
     });
+
+    // --- 홈 화면 퀵메뉴 클릭 이벤트 연결 ---
+    const quickMenuItems = document.querySelectorAll('.quick-menu .menu-item');
+    if(quickMenuItems.length >= 4) {
+        quickMenuItems[0].addEventListener('click', () => showSection('news'));
+        quickMenuItems[1].addEventListener('click', () => showSection('board'));
+        quickMenuItems[2].addEventListener('click', () => showSection('download'));
+        quickMenuItems[3].addEventListener('click', () => showSection('benefits'));
+    }
 
     // --- 내 정보 & 로그아웃 & 승인 로직 ---
     const btnLogout = document.getElementById('btn-logout');
@@ -514,6 +527,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         title: title,
                         content: content,
                         author: currentUserName,
+                        empId: currentUser ? currentUser.empId : "",
                         views: 0,
                         createdAt: fb.serverTimestamp()
                     });
@@ -643,6 +657,72 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // ----------------------------------------------------
+    // 6. 조합원 혜택 실시간 CRUD (Firestore)
+    // ----------------------------------------------------
+    const benefitsListContainer = document.getElementById('benefits-list-container');
+    
+    async function loadBenefitsPosts() {
+        if(!window.keitiFirebase || !window.keitiFirebase.isInit) return;
+        
+        // 관리자 직위판별 (로직)
+        if(fabBenefitsBtn && currentUser && currentUser.isAdmin) {
+            fabBenefitsBtn.style.display = 'flex';
+        } else if(fabBenefitsBtn) {
+            fabBenefitsBtn.style.display = 'none';
+        }
+
+        try {
+            const fb = window.keitiFirebase;
+            const q = fb.query(fb.collection(fb.db, "benefits"), fb.orderBy("createdAt", "desc"));
+            const querySnapshot = await fb.getDocs(q);
+            
+            if(benefitsListContainer) benefitsListContainer.innerHTML = '';
+            
+            if(querySnapshot.empty) {
+                if(benefitsListContainer) benefitsListContainer.innerHTML = '<div style="padding: 20px; text-align:center; color:#999;">혜택 안내가 없습니다.</div>';
+                return;
+            }
+
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                let dateStr = "";
+                if(data.createdAt) {
+                    const dateObj = data.createdAt.toDate();
+                    dateStr = `${dateObj.getFullYear()}.${String(dateObj.getMonth()+1).padStart(2,'0')}.${String(dateObj.getDate()).padStart(2,'0')}`;
+                }
+
+                if(benefitsListContainer) {
+                    const bnItem = document.createElement('div');
+                    bnItem.className = 'list-item';
+                    bnItem.style.cssText = 'border-bottom: 1px solid #eee; padding:15px; display:flex; gap:10px; align-items:flex-start; cursor:pointer;';
+                    bnItem.innerHTML = `
+                        <div class="tag tag-primary" style="flex-shrink:0; background-color: var(--primary-purple);">혜택</div>
+                        <div class="item-content" style="flex-grow:1;">
+                            <h4 style="margin:0 0 5px 0; font-size:15px; color:var(--text-main);">${escapeHtml(data.title)}</h4>
+                            <span class="date" style="font-size:12px; color:var(--text-light);">${dateStr} · <strong>${escapeHtml(data.author)}</strong> · 조회 ${data.views || 0}</span>
+                        </div>
+                    `;
+                    bnItem.addEventListener('click', () => openPostDetail(doc.id, 'benefits'));
+                    benefitsListContainer.appendChild(bnItem);
+                }
+            });
+        } catch(error) {
+            console.error("혜택 불러오기 실패:", error);
+        }
+    }
+
+    // --- 초기 실행 훅 (로그인 성공 시) ---
+    // (이 부분은 loadBoardPosts/loadNewsPosts가 호출되는 로그인 통과 부분 등에서 함께 loadBenefitsPosts()가 호출되도록 추가)
+    const originalEnterMainView = enterMainView;
+    enterMainView = function() {
+        originalEnterMainView();
+        loadBenefitsPosts();
+    };
+
+    // 전역 상태: 현재 열려있는 게시글 정보 (삭제 기능 처리용)
+    let currentOpenPostInfo = { id: null, collection: null };
+
     // 전역 상세 보기 함수
     window.openPostDetail = async function(docId, collectionName) {
         if(!window.keitiFirebase || !window.keitiFirebase.isInit) return;
@@ -683,6 +763,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('detail-views').innerText = newViews;
                 document.getElementById('detail-content').innerHTML = escapeHtml(data.content).replace(/\n/g, '<br>');
 
+                // 삭제 권한: 본인이 작성자이거나 (단순히 작성자 이름 비교) empId가 같거나
+                const authorCheck = (currentUser && currentUser.name === data.author);
+                const empIdCheck = (data.empId && currentUser && data.empId === currentUser.empId);
+                const deleteBtn = document.getElementById('btn-delete-post');
+                if (deleteBtn) {
+                    if (authorCheck || empIdCheck) {
+                        deleteBtn.style.display = 'inline-block';
+                    } else {
+                        deleteBtn.style.display = 'none';
+                    }
+                }
+
+                currentOpenPostInfo = { id: docId, collection: collectionName };
+
                 openModal('post-detail-modal');
 
                 // 리스트 배경 최신화를 위해 데이터 리로드 호출 (퍼포먼스 이슈 크지 않음)
@@ -722,6 +816,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         title: title,
                         content: content,
                         author: currentUserName,
+                        empId: currentUser ? currentUser.empId : "",
                         views: 0,
                         createdAt: fb.serverTimestamp()
                     });
@@ -736,6 +831,82 @@ document.addEventListener('DOMContentLoaded', () => {
                     showAlert("글 작성에 실패했습니다.");
                 } finally {
                     addNewsBtn.innerText = "소식 발행하기";
+                }
+            }
+        });
+    }
+
+    // ----------------------------------------------------
+    // 7. 조합원 혜택 등록 및 게시글 전역 삭제 이벤트
+    // ----------------------------------------------------
+    if(fabBenefitsBtn) {
+        fabBenefitsBtn.addEventListener('click', () => {
+            openModal('write-benefits-modal');
+        });
+    }
+
+    if(addBenefitsBtn) {
+        addBenefitsBtn.addEventListener('click', async () => {
+            const title = document.getElementById('benefitsTitle').value;
+            const content = document.getElementById('benefitsContent').value;
+
+            if(!title || !content) {
+                showAlert("제목과 혜택 내용을 모두 입력해주세요.");
+                return;
+            }
+
+            addBenefitsBtn.innerText = "등록 중...";
+
+            if (window.keitiFirebase && window.keitiFirebase.isInit) {
+                try {
+                    const fb = window.keitiFirebase;
+                    await fb.addDoc(fb.collection(fb.db, "benefits"), {
+                        title: title,
+                        content: content,
+                        author: currentUserName,
+                        empId: currentUser ? currentUser.empId : "",
+                        views: 0,
+                        createdAt: fb.serverTimestamp()
+                    });
+                    
+                    document.getElementById('benefitsTitle').value = '';
+                    document.getElementById('benefitsContent').value = '';
+                    closeModal('write-benefits-modal');
+                    
+                    await loadBenefitsPosts();
+                } catch(error) {
+                    console.error("혜택 등록 실패:", error);
+                    showAlert("혜택 등록에 실패했습니다.");
+                } finally {
+                    addBenefitsBtn.innerText = "혜택 등록하기";
+                }
+            }
+        });
+    }
+
+    const btnDeletePost = document.getElementById('btn-delete-post');
+    if (btnDeletePost) {
+        btnDeletePost.addEventListener('click', async () => {
+            if(!currentOpenPostInfo.id || !currentOpenPostInfo.collection) return;
+            if(!confirm("이 게시글을 삭제하시겠습니까? 삭제된 글은 복구할 수 없습니다.")) return;
+
+            if (window.keitiFirebase && window.keitiFirebase.isInit) {
+                try {
+                    const fb = window.keitiFirebase;
+                    await fb.deleteDoc(fb.doc(fb.db, currentOpenPostInfo.collection, currentOpenPostInfo.id));
+                    
+                    closeModal('post-detail-modal');
+                    showAlert("글이 정상적으로 삭제되었습니다.");
+                    
+                    // 새로고침 로드
+                    if (currentOpenPostInfo.collection === 'posts') await loadBoardPosts();
+                    if (currentOpenPostInfo.collection === 'news') await loadNewsPosts();
+                    if (currentOpenPostInfo.collection === 'benefits') await loadBenefitsPosts();
+                    
+                    currentOpenPostInfo = { id: null, collection: null };
+                } catch(error) {
+                    console.error("게시글 삭제 실패:", error);
+                    showAlert("삭제 중 오류가 발생했습니다.");
                 }
             }
         });

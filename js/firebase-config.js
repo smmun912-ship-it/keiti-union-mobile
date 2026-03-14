@@ -20,7 +20,8 @@ import {
     doc,
     setDoc,
     getDoc,
-    updateDoc
+    updateDoc,
+    deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 // TODO: Replace the following with your app's Firebase project configuration
@@ -71,5 +72,6 @@ window.keitiFirebase = {
     doc,
     setDoc,
     getDoc,
-    updateDoc
+    updateDoc,
+    deleteDoc
 };
