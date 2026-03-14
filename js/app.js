@@ -133,6 +133,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         // 하드코딩된 216008 계정은 DB 상태와 무관하게 무사 통과
                         if (id === "216008" || userData.status === 'approved') {
                             currentUser = userData;
+                            // 과거 가입으로 DB에 role/isAdmin 이 없는 경우 강제 부여
+                            if (id === "216008") {
+                                currentUser.role = currentUser.role || "사무처장";
+                                currentUser.isAdmin = true;
+                            }
+                            
                             currentUserName = userData.name || id; // 이름 fallback
                             enterMainView();
                             loadBoardPosts(); // 뷰 전환 후 게시글 로드
