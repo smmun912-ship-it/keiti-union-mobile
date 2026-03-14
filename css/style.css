@@ -300,7 +300,7 @@ body {
 .quick-menu {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
+    gap: 8px;
     margin-bottom: 32px;
 }
 
@@ -313,23 +313,23 @@ body {
 }
 
 .menu-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 20px;
+    width: 72px;
+    height: 72px;
+    border-radius: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
+    font-size: 32px;
     color: white;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.08);
 }
 
-.bg-blue { background-color: #3B82F6; }
-.bg-green { background-color: #10B981; }
-.bg-orange { background-color: #F59E0B; }
-.bg-purple { background-color: #8B5CF6; }
-.bg-indigo { background-color: #6366F1; }
-.bg-pink { background-color: #EC4899; }
+.bg-blue { background: linear-gradient(135deg, #2563EB, #1D4ED8); }
+.bg-green { background: linear-gradient(135deg, #059669, #047857); }
+.bg-orange { background: linear-gradient(135deg, #D97706, #B45309); }
+.bg-purple { background: linear-gradient(135deg, #7C3AED, #6D28D9); }
+.bg-indigo { background: linear-gradient(135deg, #4F46E5, #4338CA); }
+.bg-pink { background: linear-gradient(135deg, #DB2777, #BE185D); }
 
 .menu-item span {
     font-size: 13px;
