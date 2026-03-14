@@ -17,7 +17,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginBtn = document.getElementById('login-btn');
     const signupBtn = document.getElementById('btn-submit-signup');
     const addPostBtn = document.getElementById('btn-submit-post');
-    const fabBtn = document.querySelector('.fab-btn');
+    const fabBtn = document.querySelector('.fab-btn'); // 자유게시판 글쓰기
+    const fabNewsBtn = document.getElementById('fab-news-write'); // 소식 글쓰기
+    const addNewsBtn = document.getElementById('btn-submit-news');
 
     // === 상태 변수 ===
     // 현재 세션의 유저 정보
@@ -141,7 +143,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             
                             currentUserName = userData.name || id; // 이름 fallback
                             enterMainView();
-                            loadBoardPosts(); // 뷰 전환 후 게시글 로드
+                            loadBoardPosts(); // 자유게시판 로드
+                            loadNewsPosts();  // 노조 소식 로드
+                        } else if (userData.status === 'rejected') {
+                            // 승인 거절
+                            await fb.signOut(fb.auth);
+                            showAlert("가입이 거절되었습니다. 관리자에게 문의해주세요.");
                         } else {
                             // 승인 대기
                             await fb.signOut(fb.auth);
@@ -154,6 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             currentUserName = "관리자";
                             enterMainView();
                             loadBoardPosts();
+                            loadNewsPosts();
                         } else {
                             await fb.signOut(fb.auth);
                             showAlert("회원 정보를 찾을 수 없습니다.");
@@ -195,7 +203,8 @@ document.addEventListener('DOMContentLoaded', () => {
         'home': document.getElementById('section-home'),
         'board': document.getElementById('section-board'),
         'download': document.getElementById('section-download'),
-        'myinfo': document.getElementById('section-myinfo')
+        'myinfo': document.getElementById('section-myinfo'),
+        'news': document.getElementById('section-news')
     };
 
     navItems.forEach(item => {
@@ -277,7 +286,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                         <div style="font-weight:bold; font-size:14px; color:var(--text-main);">${escapeHtml(data.name)} <span style="font-size:12px; color:var(--text-secondary); font-weight:normal;">(${escapeHtml(data.role)})</span></div>
                                         <div style="font-size:12px; color:var(--text-light); margin-top:4px;">사번: ${escapeHtml(data.empId)}</div>
                                     </div>
-                                    <button class="btn btn-primary" style="padding:6px 14px; font-size:12px;" onclick="approveUser('${docSnap.id}')">승인하기</button>
+                                    <div style="display:flex; gap:5px;">
+                                        <button class="btn btn-secondary" style="padding:6px 10px; font-size:12px;" onclick="rejectUser('${docSnap.id}')">거절</button>
+                                        <button class="btn btn-primary" style="padding:6px 14px; font-size:12px;" onclick="approveUser('${docSnap.id}')">승인</button>
+                                    </div>
                                 </div>
                             `;
                             pendingList.insertAdjacentHTML('beforeend', userItem);
@@ -315,12 +327,42 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // 전역 거절 함수 노출
+    window.rejectUser = async function(docId) {
+        if(!confirm("이 사용자의 가입을 거절하시겠습니까?")) return;
+
+        if(window.keitiFirebase && window.keitiFirebase.isInit) {
+            const fb = window.keitiFirebase;
+            try {
+                await fb.setDoc(fb.doc(fb.db, "users", docId), { status: 'rejected' }, { merge: true });
+                showAlert("가입이 거절되었습니다.");
+                renderMyInfo(); // 리스트 새로고침
+            } catch(err) {
+                console.error("거절 처리 실패", err);
+                showAlert("거절 처리에 실패했습니다.");
+            }
+        }
+    }
+
     // 퀵메뉴에서 탭 전환 유도
     const quickMenus = document.querySelectorAll('.menu-item');
     quickMenus.forEach((menu, index) => {
         menu.addEventListener('click', () => {
+            // 노조소식(index 0) - 숨겨진 news 띄우기
+            if(index === 0) {
+                // 네비게이션 액티브 상태 해제
+                navItems.forEach(nav => nav.classList.remove('active'));
+                Object.values(sections).forEach(sec => {
+                    if(sec) {
+                        sec.style.display = 'none';
+                        sec.classList.remove('fade-in');
+                    }
+                });
+                sections['news'].style.display = 'block';
+                setTimeout(() => sections['news'].classList.add('fade-in'), 10);
+            }
             // 자유게시판(index 1), 서식다운(index 2)
-            if(index === 1) document.querySelector('.nav-item[data-target="board"]').click();
+            else if(index === 1) document.querySelector('.nav-item[data-target="board"]').click();
             else if(index === 2) document.querySelector('.nav-item[data-target="download"]').click();
         });
     });
@@ -349,11 +391,18 @@ document.addEventListener('DOMContentLoaded', () => {
             
             boardListContainer.innerHTML = ''; // 초기화
             
+            const homeRecentContainer = document.getElementById('home-recent-posts');
+            if(homeRecentContainer) homeRecentContainer.innerHTML = ''; // 홈 화면 최신글 초기화
+
             if(querySnapshot.empty) {
                 boardListContainer.innerHTML = '<div style="padding: 20px; text-align:center; color:#999;">작성된 게시글이 없습니다.</div>';
+                if(homeRecentContainer) {
+                    homeRecentContainer.innerHTML = '<div style="padding: 20px; text-align:center; color:#999;">최근 소식이 없습니다.</div>';
+                }
                 return;
             }
 
+            let postCount = 0;
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
                 // 날짜 포맷팅 로직
@@ -363,15 +412,35 @@ document.addEventListener('DOMContentLoaded', () => {
                     dateStr = `${dateObj.getFullYear()}.${String(dateObj.getMonth()+1).padStart(2,'0')}.${String(dateObj.getDate()).padStart(2,'0')}`;
                 }
 
-                const postHtml = `
-                    <div class="board-item">
-                        <h4>${escapeHtml(data.title)}</h4>
-                        <div class="board-meta">
-                            <span>작성자: ${escapeHtml(data.author)}</span> · <span>${dateStr}</span> · <span>조회 ${data.views || 0}</span>
-                        </div>
+                // 자유게시판 항목 생성
+                const boardItem = document.createElement('div');
+                boardItem.className = 'board-item';
+                boardItem.style.cursor = 'pointer'; // 클릭 유도
+                boardItem.innerHTML = `
+                    <h4>${escapeHtml(data.title)}</h4>
+                    <div class="board-meta">
+                        <span>작성자: ${escapeHtml(data.author)}</span> · <span>${dateStr}</span> · <span>조회 ${data.views || 0}</span>
                     </div>
                 `;
-                boardListContainer.insertAdjacentHTML('beforeend', postHtml);
+                boardItem.addEventListener('click', () => openPostDetail(doc.id, 'posts'));
+                boardListContainer.appendChild(boardItem);
+
+                // 홈 화면 최신글 바인딩 (최대 3개)
+                if (homeRecentContainer && postCount < 3) {
+                    const homeItem = document.createElement('div');
+                    homeItem.className = 'list-item';
+                    homeItem.style.cursor = 'pointer';
+                    homeItem.innerHTML = `
+                        <div class="tag tag-outline">자유</div>
+                        <div class="item-content">
+                            <h4>${escapeHtml(data.title)}</h4>
+                            <span class="date">${dateStr}</span>
+                        </div>
+                    `;
+                    homeItem.addEventListener('click', () => openPostDetail(doc.id, 'posts'));
+                    homeRecentContainer.appendChild(homeItem);
+                }
+                postCount++;
             });
         } catch(error) {
             console.error("게시글 불러오기 실패:", error);
@@ -448,6 +517,170 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
             `;
             boardListContainer.insertAdjacentHTML('beforeend', postHtml);
+        });
+    }
+
+    // ----------------------------------------------------
+    // 5. 노조 소식(공지사항) 실시간 CRUD (Firestore)
+    // ----------------------------------------------------
+    const newsListContainer = document.getElementById('news-list-container');
+    
+    // 노조소식 글 불러오기
+    async function loadNewsPosts() {
+        if(!window.keitiFirebase || !window.keitiFirebase.isInit) return;
+        
+        // 관리자 직위판별 (로직)
+        if(fabNewsBtn && currentUser && currentUser.isAdmin) {
+            fabNewsBtn.style.display = 'flex';
+        } else if(fabNewsBtn) {
+            fabNewsBtn.style.display = 'none';
+        }
+
+        try {
+            const fb = window.keitiFirebase;
+            const q = fb.query(fb.collection(fb.db, "news"), fb.orderBy("createdAt", "desc"));
+            const querySnapshot = await fb.getDocs(q);
+            
+            if(newsListContainer) newsListContainer.innerHTML = '';
+            
+            const homeRecentContainer = document.getElementById('home-recent-posts');
+            if(homeRecentContainer) homeRecentContainer.innerHTML = '';
+
+            if(querySnapshot.empty) {
+                if(newsListContainer) newsListContainer.innerHTML = '<div style="padding: 20px; text-align:center; color:#999;">작성된 노조 소식이 없습니다.</div>';
+                if(homeRecentContainer) homeRecentContainer.innerHTML = '<div style="padding: 20px; text-align:center; color:#999;">최근 소식이 없습니다.</div>';
+                return;
+            }
+
+            let postCount = 0;
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                let dateStr = "";
+                if(data.createdAt) {
+                    const dateObj = data.createdAt.toDate();
+                    dateStr = `${dateObj.getFullYear()}.${String(dateObj.getMonth()+1).padStart(2,'0')}.${String(dateObj.getDate()).padStart(2,'0')}`;
+                }
+
+                if(newsListContainer) {
+                    const newsItem = document.createElement('div');
+                    newsItem.className = 'list-item';
+                    newsItem.style.cssText = 'border-bottom: 1px solid #eee; padding:15px; display:flex; gap:10px; align-items:flex-start; cursor:pointer;';
+                    newsItem.innerHTML = `
+                        <div class="tag tag-primary" style="flex-shrink:0;">소식</div>
+                        <div class="item-content" style="flex-grow:1;">
+                            <h4 style="margin:0 0 5px 0; font-size:15px; color:var(--text-main);">${escapeHtml(data.title)}</h4>
+                            <span class="date" style="font-size:12px; color:var(--text-light);">${dateStr} · <strong>${escapeHtml(data.author)}</strong> · 조회 ${data.views || 0}</span>
+                        </div>
+                    `;
+                    newsItem.addEventListener('click', () => openPostDetail(doc.id, 'news'));
+                    newsListContainer.appendChild(newsItem);
+                }
+
+                if (homeRecentContainer && postCount < 3) {
+                    const homeNewsItem = document.createElement('div');
+                    homeNewsItem.className = 'list-item';
+                    homeNewsItem.style.cursor = 'pointer';
+                    homeNewsItem.innerHTML = `
+                        <div class="tag tag-primary">소식</div>
+                        <div class="item-content">
+                            <h4>${escapeHtml(data.title)}</h4>
+                            <span class="date">${dateStr}</span>
+                        </div>
+                    `;
+                    homeNewsItem.addEventListener('click', () => openPostDetail(doc.id, 'news'));
+                    homeRecentContainer.appendChild(homeNewsItem);
+                }
+                postCount++;
+            });
+        } catch(error) {
+            console.error("소식 불러오기 실패:", error);
+        }
+    }
+
+    // 전역 상세 보기 함수
+    window.openPostDetail = async function(docId, collectionName) {
+        if(!window.keitiFirebase || !window.keitiFirebase.isInit) return;
+        const fb = window.keitiFirebase;
+
+        try {
+            const docRef = fb.doc(fb.db, collectionName, docId);
+            const docSnap = await fb.getDoc(docRef);
+
+            if(docSnap.exists()) {
+                const data = docSnap.data();
+                const newViews = (data.views || 0) + 1;
+
+                // 조회수 즉각 업데이트
+                await fb.updateDoc(docRef, { views: newViews });
+
+                // UI 모달에 세팅
+                document.getElementById('detail-title').innerText = data.title;
+                document.getElementById('detail-author').innerText = data.author || '알 수 없음';
+                
+                let dateStr = "";
+                if(data.createdAt) {
+                    const dateObj = data.createdAt.toDate();
+                    dateStr = `${dateObj.getFullYear()}.${String(dateObj.getMonth()+1).padStart(2,'0')}.${String(dateObj.getDate()).padStart(2,'0')}`;
+                }
+                document.getElementById('detail-date').innerText = dateStr;
+                document.getElementById('detail-views').innerText = newViews;
+                document.getElementById('detail-content').innerHTML = escapeHtml(data.content).replace(/\n/g, '<br>');
+
+                openModal('post-detail-modal');
+
+                // 리스트 배경 최신화를 위해 데이터 리로드 호출 (퍼포먼스 이슈 크지 않음)
+                if(collectionName === 'posts') loadBoardPosts();
+                if(collectionName === 'news') loadNewsPosts();
+            } else {
+                showAlert("존재하지 않거나 삭제된 게시물입니다.");
+            }
+        } catch(err) {
+            console.error("상세보기 에러:", err);
+            showAlert("상세 내용을 불러올 수 없습니다.");
+        }
+    }
+
+    if(fabNewsBtn) {
+        fabNewsBtn.addEventListener('click', () => {
+            openModal('write-news-modal');
+        });
+    }
+
+    if(addNewsBtn) {
+        addNewsBtn.addEventListener('click', async () => {
+            const title = document.getElementById('newsTitle').value;
+            const content = document.getElementById('newsContent').value;
+
+            if(!title || !content) {
+                showAlert("제목과 내용을 모두 입력해주세요.");
+                return;
+            }
+
+            addNewsBtn.innerText = "발행 중...";
+
+            if (window.keitiFirebase && window.keitiFirebase.isInit) {
+                try {
+                    const fb = window.keitiFirebase;
+                    await fb.addDoc(fb.collection(fb.db, "news"), {
+                        title: title,
+                        content: content,
+                        author: currentUserName,
+                        views: 0,
+                        createdAt: fb.serverTimestamp()
+                    });
+                    
+                    document.getElementById('newsTitle').value = '';
+                    document.getElementById('newsContent').value = '';
+                    closeModal('write-news-modal');
+                    
+                    await loadNewsPosts(); // 소식 리로드
+                } catch(error) {
+                    console.error("소식 작성 실패:", error);
+                    showAlert("글 작성에 실패했습니다.");
+                } finally {
+                    addNewsBtn.innerText = "소식 발행하기";
+                }
+            }
         });
     }
 

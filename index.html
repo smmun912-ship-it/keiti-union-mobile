@@ -94,32 +94,27 @@
                     <div class="card-section">
                         <div class="section-header">
                             <h3>최근 소식</h3>
-                            <a href="#" class="view-all">더보기 <i class="fa-solid fa-chevron-right"></i></a>
+                            <a href="#" class="view-all" onclick="document.querySelector('.nav-item[data-target=\'board\']').click(); return false;">더보기 <i class="fa-solid fa-chevron-right"></i></a>
                         </div>
-                        <div class="list-card">
-                            <div class="list-item">
-                                <div class="tag tag-primary">공지</div>
-                                <div class="item-content">
-                                    <h4>2026년 임금협상 진행 상황 안내</h4>
-                                    <span class="date">2026.03.14</span>
-                                </div>
-                            </div>
-                            <div class="list-item">
-                                <div class="tag tag-secondary">행사</div>
-                                <div class="item-content">
-                                    <h4>상반기 노사합동 체육대회 개최 안내</h4>
-                                    <span class="date">2026.03.10</span>
-                                </div>
-                            </div>
-                            <div class="list-item">
-                                <div class="tag tag-outline">안내</div>
-                                <div class="item-content">
-                                    <h4>노동조합원 온라인 의견수렴 참여 부탁드립니다.</h4>
-                                    <span class="date">2026.03.05</span>
-                                </div>
-                            </div>
+                        <div class="list-card" id="home-recent-posts">
+                            <div style="padding: 20px; text-align:center; color:#999;">최근 소식을 불러오는 중...</div>
                         </div>
                     </div>
+                </div>
+
+                <!-- 노조 소식 섹션 (기본 숨김) -->
+                <div id="section-news" class="content-section" style="display: none;">
+                    <div class="page-title">
+                        <h2>노조 소식</h2>
+                        <p>한국환경산업기술원 노동조합 주요 행사 및 공지사항</p>
+                    </div>
+                    
+                    <div class="list-card" id="news-list-container">
+                        <div style="padding: 20px; text-align:center; color:#999;">등록된 소식이 없습니다.</div>
+                    </div>
+                    
+                    <!-- 노조소식 글쓰기 플로팅 버튼 (관리자 전용) -->
+                    <button id="fab-news-write" class="fab-btn bg-blue" style="display:none;"><i class="fa-solid fa-pen"></i></button>
                 </div>
 
                 <!-- 게시판 섹션 (기본 숨김) -->
@@ -166,22 +161,22 @@
                         <div class="download-card">
                             <i class="fa-solid fa-file-pdf file-icon pdf"></i>
                             <div class="desc">노동조합 가입신청서</div>
-                            <button class="btn-download"><i class="fa-solid fa-download"></i></button>
+                            <button class="btn-download" onclick="showAlert('현재 샘플 파일이 등록되지 않았습니다. (Firebase Storage 연동 전)')"><i class="fa-solid fa-download"></i></button>
                         </div>
                         <div class="download-card">
                             <i class="fa-solid fa-file-word file-icon word"></i>
                             <div class="desc">경조사 지원금 신청서</div>
-                            <button class="btn-download"><i class="fa-solid fa-download"></i></button>
+                            <button class="btn-download" onclick="showAlert('현재 샘플 파일이 등록되지 않았습니다. (Firebase Storage 연동 전)')"><i class="fa-solid fa-download"></i></button>
                         </div>
                         <div class="download-card">
                             <i class="fa-solid fa-file-excel file-icon excel"></i>
                             <div class="desc">동호회 지원비 청구 양식</div>
-                            <button class="btn-download"><i class="fa-solid fa-download"></i></button>
+                            <button class="btn-download" onclick="showAlert('현재 샘플 파일이 등록되지 않았습니다. (Firebase Storage 연동 전)')"><i class="fa-solid fa-download"></i></button>
                         </div>
                         <div class="download-card">
                             <i class="fa-solid fa-file-pdf file-icon pdf"></i>
                             <div class="desc">근로시간 면제자 활동보고서</div>
-                            <button class="btn-download"><i class="fa-solid fa-download"></i></button>
+                            <button class="btn-download" onclick="showAlert('현재 샘플 파일이 등록되지 않았습니다. (Firebase Storage 연동 전)')"><i class="fa-solid fa-download"></i></button>
                         </div>
                     </div>
                 </div>
@@ -297,11 +292,11 @@
             </div>
         </div>
 
-        <!-- 3. 게시판 글쓰기 모달 -->
+        <!-- 3. 자유게시판 새 글 모달 -->
         <div id="write-modal" class="modal-overlay">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3>새 글 등록</h3>
+                    <h3>자유게시판 새 글 작성</h3>
                     <button class="btn-close" onclick="closeModal('write-modal')"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <div class="modal-body">
@@ -314,6 +309,45 @@
                         <textarea id="postContent" placeholder="자유롭게 의견을 남겨주세요"></textarea>
                     </div>
                     <button id="btn-submit-post" class="btn btn-primary" style="margin-top:10px;">등록하기</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. 노조 소식(공지) 글 모달 (관리자 전용) -->
+        <div id="write-news-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 style="color:var(--primary-blue);">노조 소식 작성</h3>
+                    <button class="btn-close" onclick="closeModal('write-news-modal')"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="newsTitle">제목</label>
+                        <input type="text" id="newsTitle" placeholder="공지/소식 제목">
+                    </div>
+                    <div class="form-group">
+                        <label for="newsContent">내용</label>
+                        <textarea id="newsContent" placeholder="핵심 소식을 전달해주세요" style="height:150px;"></textarea>
+                    </div>
+                    <button id="btn-submit-news" class="btn btn-primary" style="margin-top:10px; background-color:var(--primary-blue);">소식 발행하기</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. 게시글/소식 상세 보기 모달 -->
+        <div id="post-detail-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="detail-title" style="margin-right:20px; word-break:keep-all; font-size:16px; line-height:1.4;">제목</h3>
+                    <button class="btn-close" onclick="closeModal('post-detail-modal')"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="modal-body">
+                    <div style="font-size:12px; color:var(--text-light); margin-bottom:15px; padding-bottom:10px; border-bottom:1px solid #eee;">
+                        작성자: <span id="detail-author"></span><br>
+                        날짜: <span id="detail-date"></span><span style="margin:0 8px;">|</span>조회: <span id="detail-views"></span>
+                    </div>
+                    <div id="detail-content" style="min-height: 150px; font-size:14px; color:var(--text-main); line-height:1.6;">내용</div>
+                    <button class="btn btn-primary" style="margin-top:20px; width:100%;" onclick="closeModal('post-detail-modal')">닫기</button>
                 </div>
             </div>
         </div>

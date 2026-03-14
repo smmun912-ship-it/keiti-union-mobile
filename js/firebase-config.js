@@ -19,7 +19,8 @@ import {
     serverTimestamp,
     doc,
     setDoc,
-    getDoc
+    getDoc,
+    updateDoc
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 // TODO: Replace the following with your app's Firebase project configuration
@@ -69,5 +70,6 @@ window.keitiFirebase = {
     serverTimestamp,
     doc,
     setDoc,
-    getDoc
+    getDoc,
+    updateDoc
 };
