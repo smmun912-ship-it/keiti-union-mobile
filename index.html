@@ -21,9 +21,11 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
     <!-- 아이콘: FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- FullCalendar CSS/JS -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
     <!-- 커스텀 스타일 -->
-    <link rel="stylesheet" href="css/style.css?v=15">
-    <link rel="stylesheet" href="css/modal.css?v=15">
+    <link rel="stylesheet" href="css/style.css?v=16">
+    <link rel="stylesheet" href="css/modal.css?v=16">
 </head>
 <body>
     <div id="app" class="app-container">
@@ -193,15 +195,20 @@
                 </div>
 
                 <!-- 주요일정 섹션 (신규) -->
-                <div id="section-schedule" class="content-section" style="display: none;">
-                    <div class="page-title">
-                        <h2>주요일정</h2>
-                        <p>KEITI 노조 주요 행사 및 회의 일정</p>
-                    </div>
-                    <div class="list-card" id="schedule-list-container">
-                        <div style="padding: 20px; text-align:center; color:#999;">등록된 일정이 없습니다.</div>
-                    </div>
-                </div>
+        <!-- 주요일정 -->
+        <div id="section-schedule" class="content-section" style="display: none;">
+            <div class="page-title">
+                <h2>주요일정</h2>
+                <p>KEITI 노조 주요 행사 및 회의 일정</p>
+            </div>
+            <!-- 달력이 표시될 영역 -->
+            <div id="calendar-container" style="background:#fff; padding:10px; border-radius:12px; margin-bottom:20px; box-shadow:0 2px 4px rgba(0,0,0,0.05);"></div>
+            <!-- 하단부 목록 영역 (선택사항, 혹은 기본 리스트 대체용) -->
+            <div id="schedule-list-container" class="list-card">
+                <!-- 일정 데이터 JS 동적 삽입 (기존 호환성 유지 혹은 보조역할) -->
+                <div style="padding: 20px; text-align:center; color:#999;">등록된 일정이 없습니다.</div>
+            </div>
+        </div>
 
                 <!-- 활동사진 섹션 (신규) -->
                 <div id="section-gallery" class="content-section" style="display: none;">
@@ -429,9 +436,23 @@
                         <label for="scheduleTitle">일정 제목</label>
                         <input type="text" id="scheduleTitle" placeholder="예: 3월 정기 대의원 회의">
                     </div>
+                    <div style="display:flex; gap:10px;">
+                        <div class="form-group" style="flex:1;">
+                            <label for="scheduleDate">일자</label>
+                            <input type="date" id="scheduleDate">
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label for="scheduleTime">시간</label>
+                            <input type="time" id="scheduleTime">
+                        </div>
+                    </div>
                     <div class="form-group">
-                        <label for="scheduleContent">일정 상세 내용</label>
-                        <textarea id="scheduleContent" placeholder="일시, 장소, 안건 등 상세 내용을 적어주세요" style="height:150px;"></textarea>
+                        <label for="scheduleLocation">장소</label>
+                        <input type="text" id="scheduleLocation" placeholder="예: 본관 2층 대회의실">
+                    </div>
+                    <div class="form-group">
+                        <label for="scheduleContent">상세 설명 (선택)</label>
+                        <textarea id="scheduleContent" placeholder="안건 등 부가 설명을 적어주세요" style="height:80px;"></textarea>
                     </div>
                     <button id="btn-submit-schedule" class="btn btn-primary btn-large" style="margin-top:10px; width:100%;">일정 등록하기</button>
                 </div>
@@ -464,7 +485,7 @@
 
     <!-- 스크립트 연결 -->
     <!-- Firebase SDK (모듈 방식 지원 최신 브라우저용) -->
-    <script type="module" src="js/firebase-config.js?v=15"></script>
-    <script type="module" src="js/app.js?v=15"></script>
+    <script type="module" src="js/firebase-config.js?v=16"></script>
+    <script type="module" src="js/app.js?v=16"></script>
 </body>
 </html>

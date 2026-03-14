@@ -619,9 +619,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             const title = document.getElementById('scheduleTitle').value.trim();
+            const date = document.getElementById('scheduleDate').value;
+            const time = document.getElementById('scheduleTime').value;
+            const location = document.getElementById('scheduleLocation').value.trim();
             const content = document.getElementById('scheduleContent').value.trim();
-            if(!title || !content) {
-                showAlert('제목과 내용을 모두 입력해주세요.');
+            if(!title || !date || !location) {
+                showAlert('제목, 일자, 장소는 필수 입력사항입니다.');
                 return;
             }
             btnSubmitSchedule.innerText = "등록 중...";
@@ -630,6 +633,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const fb = window.keitiFirebase;
                     await fb.addDoc(fb.collection(fb.db, "schedule"), {
                         title: title,
+                        date: date,
+                        time: time,
+                        location: location,
                         content: content,
                         author: currentUser.name || currentUserName || "관리자",
                         empId: currentUser.empId,
@@ -650,9 +656,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    let calendarInstance = null; // 캘린더 인스턴스 전역 관리
+
     async function loadSchedulePosts() {
-        const container = document.getElementById('schedule-list-container');
-        if(!container) return;
+        const listContainer = document.getElementById('schedule-list-container');
+        const calContainer = document.getElementById('calendar-container');
+        if(!listContainer || !calContainer) return;
         
         if (window.keitiFirebase && window.keitiFirebase.isInit) {
             try {
@@ -660,16 +669,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 const q = fb.query(fb.collection(fb.db, "schedule"), fb.orderBy("createdAt", "desc"));
                 const querySnapshot = await fb.getDocs(q);
                 
-                container.innerHTML = '';
+                let events = [];
+                listContainer.innerHTML = ''; // 기존 하단 리스트 비우기
+                
                 if(querySnapshot.empty) {
-                    container.innerHTML = '<div style="padding: 20px; text-align:center; color:#999;">등록된 일정이 없습니다.</div>';
-                    return;
+                    listContainer.innerHTML = '<div style="padding: 20px; text-align:center; color:#999;">등록된 일정이 없습니다.</div>';
                 }
                 
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
-                    let dateStr = "날짜 없음";
-                    if(data.createdAt) {
+                    
+                    // FullCalendar 이벤트용 변환
+                    const eventItem = {
+                        id: doc.id,
+                        title: data.title,
+                        start: data.date + (data.time ? `T${data.time}:00` : ''),
+                        extendedProps: {
+                            location: data.location || '',
+                            content: data.content || '',
+                            author: data.author,
+                            views: data.views || 0,
+                            createdAt: data.createdAt
+                        }
+                    };
+                    events.push(eventItem);
+                    
+                    // 하단 리스트용 모바일 UI 생성
+                    const timeStr = data.time ? ` · ${data.time}` : '';
+                    let dateStr = "미정";
+                    if(data.date) {
+                        const d = new Date(data.date);
+                        dateStr = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+                    } else if(data.createdAt) {
                         const dateObj = data.createdAt.toDate();
                         dateStr = `${dateObj.getFullYear()}.${String(dateObj.getMonth()+1).padStart(2,'0')}.${String(dateObj.getDate()).padStart(2,'0')}`;
                     }
@@ -679,18 +710,45 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="tag tag-outline">일정</div>
                             <div class="item-content" style="flex:1;">
                                 <h4>${escapeHtml(data.title)}</h4>
-                                <div class="date">${escapeHtml(data.author)} · ${dateStr} · 조회 ${data.views || 0}</div>
+                                <div class="date" style="color:var(--primary-blue); font-weight:600;"><i class="fa-regular fa-calendar-check"></i> ${dateStr}${timeStr}</div>
+                                <div class="date">${escapeHtml(data.author)} · 장소: ${escapeHtml(data.location || '미정')}</div>
                             </div>
                         </div>
                     `;
-                    container.insertAdjacentHTML('beforeend', postHTML);
+                    listContainer.insertAdjacentHTML('beforeend', postHTML);
                 });
+
+                // FullCalendar 초기화 및 렌더링
+                if(window.FullCalendar) {
+                    if(calendarInstance) {
+                        calendarInstance.destroy(); // 기존 인스턴스 파괴 후 재구성
+                    }
+                    calendarInstance = new FullCalendar.Calendar(calContainer, {
+                        initialView: 'dayGridMonth',
+                        locale: 'ko',
+                        headerToolbar: {
+                            left: 'prev,next',
+                            center: 'title',
+                            right: 'today'
+                        },
+                        height: 'auto',
+                        events: events,
+                        eventClick: function(info) {
+                            viewPostDetail(info.event.id, 'schedule');
+                        }
+                    });
+                    calendarInstance.render();
+                    
+                    // 만약 주요일정이 숨겨져있다가 나올 경우(style=display:none 해제 시) 캘린더가 찌그러지는 현상 방지를 위해 리사이징 처리 필요.
+                    // 현재는 showSection에서 처리하도록 showSection도 약간 손봐야 함(차후).
+                }
+
             } catch(error) {
                 console.error("주요일정 로드 에러:", error);
-                container.innerHTML = '<div style="padding: 20px; text-align:center; color:#ef4444;">데이터를 불러오는 데 실패했습니다.</div>';
+                listContainer.innerHTML = '<div style="padding: 20px; text-align:center; color:#ef4444;">데이터를 불러오는 데 실패했습니다.</div>';
             }
         } else {
-            container.innerHTML = '<div style="padding: 20px; text-align:center; color:#999;">[오프라인 테스트] 일정이 없습니다.</div>';
+            listContainer.innerHTML = '<div style="padding: 20px; text-align:center; color:#999;">[오프라인 테스트] 일정이 없습니다.</div>';
         }
     }
 
@@ -1040,7 +1098,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 document.getElementById('detail-date').innerText = dateStr;
                 document.getElementById('detail-views').innerText = newViews;
-                document.getElementById('detail-content').innerHTML = escapeHtml(data.content).replace(/\n/g, '<br>');
+                let detailContentStr = escapeHtml(data.content || '').replace(/\n/g, '<br>');
+                
+                // 일정이면 부가 정보(일자, 시간, 장소)를 본문 상단에 추가 노출
+                if (collectionName === 'schedule') {
+                    const schDate = escapeHtml(data.date || '미정');
+                    const schTime = escapeHtml(data.time || '미정');
+                    const schLocation = escapeHtml(data.location || '미정');
+                    
+                    const extraHTML = `
+                        <div style="background:#f9fafb; padding:15px; border-radius:10px; margin-bottom:20px; border:1px solid #eee;">
+                            <div style="margin-bottom:8px;"><strong><i class="fa-solid fa-calendar-day"></i> 일자 및 시간:</strong> ${schDate} ${schTime}</div>
+                            <div><strong><i class="fa-solid fa-location-dot"></i> 장소:</strong> ${schLocation}</div>
+                        </div>
+                    `;
+                    detailContentStr = extraHTML + detailContentStr;
+                }
+                
+                document.getElementById('detail-content').innerHTML = detailContentStr;
 
                 // 삭제 권한: 본인이 작성자이거나 (단순히 작성자 이름 비교) empId가 같거나
                 const authorCheck = (currentUser && currentUser.name === data.author);
