@@ -13,8 +13,8 @@
     <!-- 아이콘: FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- 커스텀 스타일 -->
-    <link rel="stylesheet" href="css/style.css?v=6">
-    <link rel="stylesheet" href="css/modal.css?v=6">
+    <link rel="stylesheet" href="css/style.css?v=8">
+    <link rel="stylesheet" href="css/modal.css?v=8">
 </head>
 <body>
     <div id="app" class="app-container">
@@ -116,9 +116,6 @@
                     <div class="list-card" id="news-list-container">
                         <div style="padding: 20px; text-align:center; color:#999;">등록된 소식이 없습니다.</div>
                     </div>
-                    
-                    <!-- 노조소식 글쓰기 플로팅 버튼 (관리자 전용) -->
-                    <button id="fab-news-write" class="fab-btn" style="display:none;"><i class="fa-solid fa-pen"></i></button>
                 </div>
 
                 <!-- 게시판 섹션 (기본 숨김) -->
@@ -149,9 +146,6 @@
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- 글쓰기 플로팅 버튼 -->
-                    <button id="fab-board-write" class="fab-btn"><i class="fa-solid fa-pen"></i></button>
                 </div>
 
                 <!-- 서식 다운로드 섹션 (기본 숨김) -->
@@ -195,9 +189,6 @@
                     <div class="list-card" id="benefits-list-container">
                         <div style="padding: 20px; text-align:center; color:#999;">등록된 혜택 안내가 없습니다.</div>
                     </div>
-                    
-                    <!-- 조합원 혜택 글쓰기 플로팅 버튼 (관리자 전용) -->
-                    <button id="fab-benefits-write" class="fab-btn" style="display:none;"><i class="fa-solid fa-pen"></i></button>
                 </div>
 
         <!-- 4. 내 정보 탭 -->
@@ -236,6 +227,11 @@
         </section>
 
     </main>
+
+    <!-- 플로팅 글쓰기 버튼 (main-view 레벨 고정) -->
+    <button id="fab-board-write" class="fab-btn" style="display:none;"><i class="fa-solid fa-pen"></i></button>
+    <button id="fab-news-write" class="fab-btn" style="display:none;"><i class="fa-solid fa-pen"></i></button>
+    <button id="fab-benefits-write" class="fab-btn" style="display:none;"><i class="fa-solid fa-pen"></i></button>
 
     <!-- 하단 고정 탭 바 -->
     <nav class="bottom-nav">
@@ -400,7 +396,7 @@
 
     <!-- 스크립트 연결 -->
     <!-- Firebase SDK (모듈 방식 지원 최신 브라우저용) -->
-    <script type="module" src="js/firebase-config.js?v=6"></script>
-    <script src="js/app.js?v=6"></script>
+    <script type="module" src="js/firebase-config.js?v=8"></script>
+    <script src="js/app.js?v=8"></script>
 </body>
 </html>

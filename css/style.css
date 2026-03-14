@@ -244,6 +244,7 @@ body {
 /* 홈 섹션 */
 .content-section {
     padding: 0 20px 20px 20px;
+    position: relative;
 }
 
 .content-section.fade-in {
@@ -484,7 +485,10 @@ body {
     border: none;
     box-shadow: var(--shadow-blue);
     cursor: pointer;
-    z-index: 90;
+    z-index: 95;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* 하단 탭 바 */

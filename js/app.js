@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const mainView = document.getElementById('main-view');
     const loginBtn = document.getElementById('login-btn');
     const signupBtn = document.getElementById('btn-submit-signup');
+    const addPostBtn = document.getElementById('btn-submit-post');
     const fabBtn = document.getElementById('fab-board-write'); // 자유게시판 글쓰기
     const fabNewsBtn = document.getElementById('fab-news-write'); // 소식 글쓰기
     const addNewsBtn = document.getElementById('btn-submit-news');
@@ -281,6 +282,11 @@ document.addEventListener('DOMContentLoaded', () => {
             sections[target].classList.add('fade-in');
         }, 10);
 
+        // FAB 버튼 표시/숨김 관리
+        if(fabBtn) fabBtn.style.display = (target === 'board') ? 'flex' : 'none';
+        if(fabNewsBtn) fabNewsBtn.style.display = (target === 'news' && currentUser && currentUser.isAdmin) ? 'flex' : 'none';
+        if(fabBenefitsBtn) fabBenefitsBtn.style.display = (target === 'benefits' && currentUser && currentUser.isAdmin) ? 'flex' : 'none';
+
         if (target === 'myinfo') renderMyInfo();
     };
 
@@ -408,28 +414,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 퀵메뉴에서 탭 전환 유도
-    const quickMenus = document.querySelectorAll('.menu-item');
-    quickMenus.forEach((menu, index) => {
-        menu.addEventListener('click', () => {
-            // 노조소식(index 0) - 숨겨진 news 띄우기
-            if(index === 0) {
-                // 네비게이션 액티브 상태 해제
-                navItems.forEach(nav => nav.classList.remove('active'));
-                Object.values(sections).forEach(sec => {
-                    if(sec) {
-                        sec.style.display = 'none';
-                        sec.classList.remove('fade-in');
-                    }
-                });
-                sections['news'].style.display = 'block';
-                setTimeout(() => sections['news'].classList.add('fade-in'), 10);
-            }
-            // 자유게시판(index 1), 서식다운(index 2)
-            else if(index === 1) document.querySelector('.nav-item[data-target="board"]').click();
-            else if(index === 2) document.querySelector('.nav-item[data-target="download"]').click();
-        });
-    });
 
 
     // ----------------------------------------------------
