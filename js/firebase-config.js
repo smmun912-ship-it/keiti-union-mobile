@@ -20,6 +20,7 @@ import {
     doc,
     setDoc,
     getDoc,
+    getDocFromServer,
     updateDoc,
     deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
@@ -72,6 +73,7 @@ window.keitiFirebase = {
     doc,
     setDoc,
     getDoc,
+    getDocFromServer,
     updateDoc,
     deleteDoc
 };

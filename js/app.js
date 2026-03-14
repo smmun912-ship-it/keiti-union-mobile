@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fb.onAuthStateChanged(fb.auth, async (user) => {
             if (user && !currentUser) { // 이미 로그인 정보가 없는데 세션이 있다면
                 try {
-                    const userDoc = await fb.getDoc(fb.doc(fb.db, "users", user.uid));
+                    const userDoc = await fb.getDocFromServer(fb.doc(fb.db, "users", user.uid));
                     if (userDoc.exists()) {
                         const userData = userDoc.data();
                         const id = userData.empId;
@@ -172,8 +172,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const userCredential = await fb.signInWithEmailAndPassword(fb.auth, email, pw);
                     const user = userCredential.user;
 
-                    // Firestore에서 유저 상태(승인 여부) 확인
-                    const userDoc = await fb.getDoc(fb.doc(fb.db, "users", user.uid));
+                    // Firestore에서 유저 상태(승인 여부) 확인 (서버 직접 조회 - 캐시 우회)
+                    const userDoc = await fb.getDocFromServer(fb.doc(fb.db, "users", user.uid));
                     
                     if (userDoc.exists()) {
                         const userData = userDoc.data();
@@ -394,8 +394,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const docRef = fb.doc(fb.db, "users", docId);
                 await fb.updateDoc(docRef, { status: 'approved' });
                 
-                // 승인이 실제로 DB에 반영되었는지 검증
-                const verifySnap = await fb.getDoc(docRef);
+                // 승인이 실제로 서버 DB에 반영되었는지 검증 (캐시 우회)
+                const verifySnap = await fb.getDocFromServer(docRef);
                 if(verifySnap.exists() && verifySnap.data().status === 'approved') {
                     showAlert("승인 완료되었습니다. (" + (verifySnap.data().name || docId) + ")");
                 } else {
