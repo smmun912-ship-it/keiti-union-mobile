@@ -627,82 +627,76 @@ document.addEventListener('DOMContentLoaded', () => {
                 showAlert('제목, 일자, 장소는 필수 입력사항입니다.');
                 return;
             }
-            btnSubmitSchedule.innerText = "등록 중...";
+
+            const scheduleId = btnSubmitSchedule.getAttribute('data-edit-id');
+            btnSubmitSchedule.innerText = "저장 중...";
+
             try {
                 if(window.keitiFirebase && window.keitiFirebase.isInit) {
                     const fb = window.keitiFirebase;
-                    await fb.addDoc(fb.collection(fb.db, "schedule"), {
+                    const scheduleData = {
                         title: title,
                         date: date,
                         time: time,
                         location: location,
                         content: content,
-                        author: currentUser.name || currentUserName || "관리자",
-                        empId: currentUser.empId,
-                        views: 0,
-                        createdAt: fb.serverTimestamp()
-                    });
+                        updatedAt: fb.serverTimestamp()
+                    };
+
+                    if (scheduleId) {
+                        // 수정 모드
+                        await fb.updateDoc(fb.doc(fb.db, "schedule", scheduleId), scheduleData);
+                        showAlert('주요일정이 수정되었습니다.');
+                    } else {
+                        // 신규 등록 모드
+                        await fb.addDoc(fb.collection(fb.db, "schedule"), {
+                            ...scheduleData,
+                            author: currentUser.name || currentUserName || "관리자",
+                            empId: currentUser.empId,
+                            views: 0,
+                            createdAt: fb.serverTimestamp()
+                        });
+                        showAlert('주요일정이 등록되었습니다.');
+                    }
                 }
                 closeModal('write-schedule-modal');
-                showAlert('주요일정이 등록되었습니다.');
+                btnSubmitSchedule.removeAttribute('data-edit-id');
                 loadSchedulePosts();
                 loadHomeRecentPosts();
             } catch(error) {
-                console.error("일정 등록 에러:", error);
-                showAlert('일정 등록에 실패했습니다.');
+                console.error("일정 저장 에러:", error);
+                showAlert('일정 저장에 실패했습니다.');
             } finally {
                 btnSubmitSchedule.innerText = "일정 등록하기";
             }
         });
     }
 
-    let calendarInstance = null; // 캘린더 인스턴스 전역 관리
-
     async function loadSchedulePosts() {
         const listContainer = document.getElementById('schedule-list-container');
-        const calContainer = document.getElementById('calendar-container');
-        if(!listContainer || !calContainer) return;
+        if(!listContainer) return;
         
         if (window.keitiFirebase && window.keitiFirebase.isInit) {
             try {
                 const fb = window.keitiFirebase;
-                const q = fb.query(fb.collection(fb.db, "schedule"), fb.orderBy("createdAt", "desc"));
+                const q = fb.query(fb.collection(fb.db, "schedule"), fb.orderBy("date", "desc"));
                 const querySnapshot = await fb.getDocs(q);
                 
-                let events = [];
-                listContainer.innerHTML = ''; // 기존 하단 리스트 비우기
+                listContainer.innerHTML = '';
                 
                 if(querySnapshot.empty) {
                     listContainer.innerHTML = '<div style="padding: 20px; text-align:center; color:#999;">등록된 일정이 없습니다.</div>';
+                    return;
                 }
                 
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
                     
-                    // FullCalendar 이벤트용 변환
-                    const eventItem = {
-                        id: doc.id,
-                        title: data.title,
-                        start: data.date + (data.time ? `T${data.time}:00` : ''),
-                        extendedProps: {
-                            location: data.location || '',
-                            content: data.content || '',
-                            author: data.author,
-                            views: data.views || 0,
-                            createdAt: data.createdAt
-                        }
-                    };
-                    events.push(eventItem);
-                    
-                    // 하단 리스트용 모바일 UI 생성
                     const timeStr = data.time ? ` · ${data.time}` : '';
                     let dateStr = "미정";
                     if(data.date) {
                         const d = new Date(data.date);
                         dateStr = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
-                    } else if(data.createdAt) {
-                        const dateObj = data.createdAt.toDate();
-                        dateStr = `${dateObj.getFullYear()}.${String(dateObj.getMonth()+1).padStart(2,'0')}.${String(dateObj.getDate()).padStart(2,'0')}`;
                     }
                     
                     const postHTML = `
@@ -717,31 +711,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     `;
                     listContainer.insertAdjacentHTML('beforeend', postHTML);
                 });
-
-                // FullCalendar 초기화 및 렌더링
-                if(window.FullCalendar) {
-                    if(calendarInstance) {
-                        calendarInstance.destroy(); // 기존 인스턴스 파괴 후 재구성
-                    }
-                    calendarInstance = new FullCalendar.Calendar(calContainer, {
-                        initialView: 'dayGridMonth',
-                        locale: 'ko',
-                        headerToolbar: {
-                            left: 'prev,next',
-                            center: 'title',
-                            right: 'today'
-                        },
-                        height: 'auto',
-                        events: events,
-                        eventClick: function(info) {
-                            viewPostDetail(info.event.id, 'schedule');
-                        }
-                    });
-                    calendarInstance.render();
-                    
-                    // 만약 주요일정이 숨겨져있다가 나올 경우(style=display:none 해제 시) 캘린더가 찌그러지는 현상 방지를 위해 리사이징 처리 필요.
-                    // 현재는 showSection에서 처리하도록 showSection도 약간 손봐야 함(차후).
-                }
 
             } catch(error) {
                 console.error("주요일정 로드 에러:", error);
@@ -1117,15 +1086,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 document.getElementById('detail-content').innerHTML = detailContentStr;
 
-                // 삭제 권한: 본인이 작성자이거나 (단순히 작성자 이름 비교) empId가 같거나
+                // 수정/삭제 권한: 본인이 작성자이거나 (단순히 작성자 이름 비교) empId가 같거나
                 const authorCheck = (currentUser && currentUser.name === data.author);
                 const empIdCheck = (data.empId && currentUser && data.empId === currentUser.empId);
+                
                 const deleteBtn = document.getElementById('btn-delete-post');
-                if (deleteBtn) {
-                    if (authorCheck || empIdCheck) {
-                        deleteBtn.style.display = 'inline-block';
+                const editBtn = document.getElementById('btn-edit-post');
+                
+                if (deleteBtn) deleteBtn.style.display = (authorCheck || empIdCheck) ? 'inline-block' : 'none';
+                if (editBtn) {
+                    // 주요일정과 자유게시판 모두 수정 가능하게 하려면 여기서 조절. 일단 주요일정만 요청받았으므로 schedule인 경우에만 노출하거나 전체 허용.
+                    // 자유게시판도 수정 기능이 있으면 좋으므로 전체 허용 (단, 수정 로직이 구현된 경우만)
+                    if (collectionName === 'schedule' && (authorCheck || empIdCheck)) {
+                        editBtn.style.display = 'inline-block';
+                        // 기존 리스너 제거 위해 클론 처리 (이벤트 중복 방지)
+                        const newEditBtn = editBtn.cloneNode(true);
+                        editBtn.parentNode.replaceChild(newEditBtn, editBtn);
+                        newEditBtn.addEventListener('click', () => {
+                            if (collectionName === 'schedule') {
+                                openEditScheduleModal(docId, data);
+                            } else {
+                                showAlert("이 게시판은 아직 수정 기능을 지원하지 않습니다.");
+                            }
+                        });
                     } else {
-                        deleteBtn.style.display = 'none';
+                        editBtn.style.display = 'none';
                     }
                 }
 
@@ -1254,7 +1239,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const btnDeletePost = document.getElementById('btn-delete-post');
     if (btnDeletePost) {
         btnDeletePost.addEventListener('click', async () => {
             if(!currentOpenPostInfo.id || !currentOpenPostInfo.collection) return;
@@ -1272,6 +1256,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (currentOpenPostInfo.collection === 'posts') await loadBoardPosts();
                     if (currentOpenPostInfo.collection === 'news') await loadNewsPosts();
                     if (currentOpenPostInfo.collection === 'benefits') await loadBenefitsPosts();
+                    if (currentOpenPostInfo.collection === 'schedule') await loadSchedulePosts();
                     await loadHomeRecentPosts();
                     currentOpenPostInfo = { id: null, collection: null };
                 } catch(error) {
@@ -1280,6 +1265,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         });
+    }
+
+    // 주요일정 수정 모달 열기
+    function openEditScheduleModal(docId, data) {
+        closeModal('post-detail-modal');
+        
+        document.getElementById('scheduleTitle').value = data.title || '';
+        document.getElementById('scheduleDate').value = data.date || '';
+        document.getElementById('scheduleTime').value = data.time || '';
+        document.getElementById('scheduleLocation').value = data.location || '';
+        document.getElementById('scheduleContent').value = data.content || '';
+        
+        const submitBtn = document.getElementById('btn-submit-schedule');
+        submitBtn.innerText = "일정 수정하기";
+        submitBtn.setAttribute('data-edit-id', docId);
+        
+        openModal('write-schedule-modal');
     }
 
     // 유틸: XSS 방지
