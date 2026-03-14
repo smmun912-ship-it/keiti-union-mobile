@@ -46,10 +46,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (id === "216008" || userData.status === 'approved') {
                             currentUser = userData;
                             if (id === "216008") {
-                                currentUser.role = currentUser.role || "부위원장";
+                                currentUser.role = "부위원장";
                                 currentUser.isAdmin = true;
+                                currentUser.name = "문성만";
                             }
-                            currentUserName = userData.name || id;
+                            currentUserName = currentUser.name || id;
                             enterMainView();
                             loadBoardPosts();
                             loadNewsPosts();
@@ -171,16 +172,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (userDoc.exists()) {
                         const userData = userDoc.data();
                         
-                        // 하드코딩된 216008 계정은 DB 상태와 무관하게 무사 통과
                         if (id === "216008" || userData.status === 'approved') {
                             currentUser = userData;
-                            // 과거 가입으로 DB에 role/isAdmin 이 없는 경우 강제 부여
+                            // 과거 가입으로 DB에 role/isAdmin 이 없는 경우 강제 부여하거나 덮어쓰기
                             if (id === "216008") {
-                                currentUser.role = currentUser.role || "부위원장";
+                                currentUser.role = "부위원장";
                                 currentUser.isAdmin = true;
+                                currentUser.name = "문성만";
                             }
                             
-                            currentUserName = userData.name || id; // 이름 fallback
+                            currentUserName = currentUser.name || id; // 이름 fallback
                             enterMainView();
                             loadBoardPosts(); // 자유게시판 로드
                             loadNewsPosts();  // 노조 소식 로드
