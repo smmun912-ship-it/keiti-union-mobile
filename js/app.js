@@ -124,10 +124,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (userDoc.exists()) {
                         const userData = userDoc.data();
                         
-                        // 관리자가 수동으로 approved 변경한 경우만 통과
-                        if(userData.status === 'approved') {
+                        // 하드코딩된 216008 계정은 DB 상태와 무관하게 무사 통과
+                        if (id === "216008" || userData.status === 'approved') {
                             currentUser = userData;
-                            currentUserName = userData.name;
+                            currentUserName = userData.name || id; // 이름 fallback
                             enterMainView();
                             loadBoardPosts(); // 뷰 전환 후 게시글 로드
                         } else {
@@ -136,8 +136,16 @@ document.addEventListener('DOMContentLoaded', () => {
                             showAlert("아직 관리자 승인 대기 중입니다. 승인 후 이용해주세요.");
                         }
                     } else {
-                        await fb.signOut(fb.auth);
-                        showAlert("회원 정보를 찾을 수 없습니다.");
+                        // DB에 문서가 없어도 특별 계정인 경우 무사 통과
+                        if (id === "216008") {
+                            currentUser = { empId: "216008", name: "관리자" };
+                            currentUserName = "관리자";
+                            enterMainView();
+                            loadBoardPosts();
+                        } else {
+                            await fb.signOut(fb.auth);
+                            showAlert("회원 정보를 찾을 수 없습니다.");
+                        }
                     }
                 } catch(error) {
                     console.error(error);
