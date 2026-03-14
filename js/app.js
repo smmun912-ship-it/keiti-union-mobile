@@ -86,11 +86,12 @@ document.addEventListener('DOMContentLoaded', () => {
         signupBtn.addEventListener('click', async () => {
             const id = document.getElementById('regId').value;
             const name = document.getElementById('regName').value;
+            const dept = document.getElementById('regDept').value;
             const role = document.getElementById('regRole').value;
             const pw = document.getElementById('regPw').value;
 
-            if(!id || !name || !role || pw.length < 6) {
-                showAlert("직위를 포함한 모든 항목을 입력하고, 비밀번호는 6자리 이상 설정해주세요.");
+            if(!id || !name || !dept || !role || pw.length < 6) {
+                showAlert("직위, 소속부서를 포함한 모든 항목을 입력하고, 비밀번호는 6자리 이상 설정해주세요.");
                 return;
             }
 
@@ -119,6 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     await fb.setDoc(fb.doc(fb.db, "users", user.uid), {
                         empId: id,
                         name: finalName,
+                        dept: dept,
                         role: role,
                         isAdmin: isAdminRole,
                         status: status, // admin이 나중에 'approved'로 변경해야 로그인 가능 (216008 제외)
@@ -221,7 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.error(error);
                     showAlert("로그인 실패. 사번이나 비밀번호를 확인해주세요.");
                 } finally {
-                    loginBtn.innerText = "노조원 로그인";
+                    loginBtn.innerText = "로그인";
                 }
             } else {
                 // [UI Mock Mode] 무조건 통과 (테스트 뷰어용)
@@ -229,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 enterMainView();
                 renderMockPosts();
                 loadBenefitsPosts();
-                loginBtn.innerText = "노조원 로그인";
+                loginBtn.innerText = "로그인";
             }
         });
     }
@@ -245,11 +247,20 @@ document.addEventListener('DOMContentLoaded', () => {
             heroRoleObj.innerHTML = `안녕하세요, <strong>${currentUserName}</strong> ${displayRole}님`;
         }
 
+        const adminMembersBtn = document.getElementById('header-admin-members');
+        if (adminMembersBtn) {
+            if (currentUser && currentUser.isAdmin) {
+                adminMembersBtn.style.display = 'inline-block';
+            } else {
+                adminMembersBtn.style.display = 'none';
+            }
+        }
+
         loginView.style.opacity = '0';
         setTimeout(() => {
             loginView.classList.remove('active');
             mainView.classList.add('active');
-        }, 400); 
+        }, 400);
     }
 
     // ----------------------------------------------------
@@ -264,7 +275,10 @@ document.addEventListener('DOMContentLoaded', () => {
         'download': document.getElementById('section-download'),
         'myinfo': document.getElementById('section-myinfo'),
         'news': document.getElementById('section-news'),
-        'benefits': document.getElementById('section-benefits')
+        'benefits': document.getElementById('section-benefits'),
+        'schedule': document.getElementById('section-schedule'),
+        'gallery': document.getElementById('section-gallery'),
+        'admin-members': document.getElementById('section-admin-members')
     };
 
     window.showSection = function(target) {
@@ -296,6 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(fabBenefitsBtn) fabBenefitsBtn.style.display = (target === 'benefits' && currentUser && currentUser.isAdmin) ? 'flex' : 'none';
 
         if (target === 'myinfo') renderMyInfo();
+        if (target === 'admin-members') loadApprovedMembers();
     };
 
     // 상단 로고 클릭 시 홈으로
@@ -306,6 +321,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // 상단 내 정보 버튼 클릭 시 내 정보 섹션으로
     if(headerMyInfo) {
         headerMyInfo.addEventListener('click', () => showSection('myinfo'));
+    }
+
+    // 상단 조합원 관리 버튼 클릭 시 관리자 섹션으로
+    const headerAdminMembersBtn = document.getElementById('header-admin-members');
+    if(headerAdminMembersBtn) {
+        headerAdminMembersBtn.addEventListener('click', () => showSection('admin-members'));
     }
 
     // (기존 하단 메뉴 리스너 코드는 navItems가 비어있으면 안전함)
@@ -347,6 +368,14 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('info-name').innerText = currentUser.name || "이름없음";
         document.getElementById('info-id').innerText = currentUser.empId || "사번안내됨";
         document.getElementById('info-role').innerText = currentUser.role || "조합원";
+        document.getElementById('info-dept').innerText = currentUser.dept || "미지정";
+        
+        let joinDateStr = "정보 없음";
+        if(currentUser.createdAt) {
+            const dateObj = currentUser.createdAt.toDate ? currentUser.createdAt.toDate() : new Date(currentUser.createdAt);
+            joinDateStr = `${dateObj.getFullYear()}년 ${dateObj.getMonth()+1}월 ${dateObj.getDate()}일`;
+        }
+        document.getElementById('info-joindate').innerText = joinDateStr;
 
         const adminSection = document.getElementById('admin-pending-section');
         const pendingList = document.getElementById('pending-users-list');
@@ -447,6 +476,60 @@ document.addEventListener('DOMContentLoaded', () => {
                     showAlert("거절 처리에 실패했습니다: " + err.message);
                 }
             }
+        }
+    }
+
+    // ----------------------------------------------------
+    // [신규] 관리자 전용 전체 조합원 목록 로드
+    // ----------------------------------------------------
+    async function loadApprovedMembers() {
+        const listContainer = document.getElementById('all-members-list');
+        if (!listContainer || !currentUser || !currentUser.isAdmin) return;
+        
+        if(window.keitiFirebase && window.keitiFirebase.isInit) {
+            const fb = window.keitiFirebase;
+            try {
+                // 승인된 전체 회원 조회
+                const q = fb.query(fb.collection(fb.db, "users"), fb.where("status", "==", "approved"), fb.orderBy("createdAt", "desc"));
+                const querySnapshot = await fb.getDocs(q);
+                listContainer.innerHTML = '';
+                
+                if(querySnapshot.empty) {
+                    listContainer.innerHTML = '<div style="padding: 20px; text-align:center; color:#999;">가입된 조합원이 없습니다.</div>';
+                    return;
+                }
+                
+                let memberHTML = '';
+                querySnapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    let dateStr = "알 수 없음";
+                    if(data.createdAt) {
+                        const dateObj = data.createdAt.toDate();
+                        dateStr = `${dateObj.getFullYear()}.${String(dateObj.getMonth()+1).padStart(2,'0')}.${String(dateObj.getDate()).padStart(2,'0')}`;
+                    }
+                    memberHTML += `
+                        <div style="border-bottom:1px solid #eee; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-weight:bold; font-size:15px; color:var(--text-main); margin-bottom: 4px;">
+                                    ${escapeHtml(data.name)} <span style="font-size:12px; color:var(--primary-blue); font-weight:normal; margin-left:4px;">${escapeHtml(data.role)}</span>
+                                </div>
+                                <div style="font-size: 13px; color: var(--text-secondary);">
+                                    사번: ${escapeHtml(data.empId)} | 부서: ${escapeHtml(data.dept || '미지정')}
+                                </div>
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-light); white-space: nowrap;">
+                                가입일: ${dateStr}
+                            </div>
+                        </div>
+                    `;
+                });
+                listContainer.innerHTML = memberHTML;
+            } catch(err) {
+                console.error("전체 조합원 조회 실패:", err);
+                listContainer.innerHTML = '<div style="padding: 20px; text-align:center; color:#e74c3c;">데이터를 불러오지 못했습니다.</div>';
+            }
+        } else {
+            listContainer.innerHTML = '<div style="padding: 20px; text-align:center; color:#999;">DB 연결 안 됨</div>';
         }
     }
 

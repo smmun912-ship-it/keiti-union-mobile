@@ -298,8 +298,9 @@ body {
 
 /* 퀵 메뉴 */
 .quick-menu {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
     margin-bottom: 32px;
 }
 
@@ -327,6 +328,8 @@ body {
 .bg-green { background-color: #10B981; }
 .bg-orange { background-color: #F59E0B; }
 .bg-purple { background-color: #8B5CF6; }
+.bg-indigo { background-color: #6366F1; }
+.bg-pink { background-color: #EC4899; }
 
 .menu-item span {
     font-size: 13px;
