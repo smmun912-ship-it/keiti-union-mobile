@@ -215,6 +215,7 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
+    cursor: pointer;
 }
 .header-logo i { color: var(--primary-blue); }
 
@@ -238,7 +239,7 @@ body {
 .app-content {
     flex: 1;
     overflow-y: auto;
-    padding-bottom: 80px; /* 네비 공간 */
+    padding-bottom: 30px; /* 네비 제거 후 여백 축소 */
 }
 
 /* 홈 섹션 */
@@ -474,7 +475,7 @@ body {
 /* FAB Button (글쓰기 등) */
 .fab-btn {
     position: absolute;
-    bottom: 80px;
+    bottom: 30px; /* 하단 네비 제거에 맞춰 하향 조정 */
     right: 20px;
     width: 56px;
     height: 56px;
@@ -491,45 +492,4 @@ body {
     justify-content: center;
 }
 
-/* 하단 탭 바 */
-.bottom-nav {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 64px;
-    background-color: rgba(255,255,255,0.9);
-    backdrop-filter: blur(10px);
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    border-top: 1px solid #F1F5F9;
-    z-index: 100;
-}
 
-.nav-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-muted);
-    text-decoration: none;
-    width: 25%;
-    height: 100%;
-    transition: var(--transition);
-}
-
-.nav-item i {
-    font-size: 20px;
-    margin-bottom: 4px;
-}
-
-.nav-item span {
-    font-size: 11px;
-    font-weight: 500;
-}
-
-.nav-item.active {
-    color: var(--primary-blue);
-}
-.nav-item.active i {
-    transform: translateY(-2px);
-}

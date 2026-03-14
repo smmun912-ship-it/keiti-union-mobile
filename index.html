@@ -13,8 +13,8 @@
     <!-- 아이콘: FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- 커스텀 스타일 -->
-    <link rel="stylesheet" href="css/style.css?v=8">
-    <link rel="stylesheet" href="css/modal.css?v=8">
+    <link rel="stylesheet" href="css/style.css?v=9">
+    <link rel="stylesheet" href="css/modal.css?v=9">
 </head>
 <body>
     <div id="app" class="app-container">
@@ -52,10 +52,10 @@
         <section id="main-view" class="view">
             <!-- 상단 헤더 -->
             <header class="app-header">
-                <div class="header-logo">
+                <div class="header-logo" id="header-logo" style="cursor: pointer;">
                     <i class="fa-solid fa-leaf"></i> KEITI 노조
                 </div>
-                <button class="icon-btn"><i class="fa-regular fa-bell"></i><span class="badge"></span></button>
+                <button class="icon-btn" id="header-myinfo"><i class="fa-regular fa-user"></i></button>
             </header>
 
             <!-- 메인 컨텐츠 영역 -->
@@ -233,25 +233,7 @@
     <button id="fab-news-write" class="fab-btn" style="display:none;"><i class="fa-solid fa-pen"></i></button>
     <button id="fab-benefits-write" class="fab-btn" style="display:none;"><i class="fa-solid fa-pen"></i></button>
 
-    <!-- 하단 고정 탭 바 -->
-    <nav class="bottom-nav">
-        <a href="#" class="nav-item active" data-target="home">
-            <i class="fa-solid fa-house"></i>
-            <span>홈</span>
-        </a>
-        <a href="#" class="nav-item" data-target="board">
-            <i class="fa-solid fa-list-ul"></i>
-            <span>게시판</span>
-        </a>
-        <a href="#" class="nav-item" data-target="download">
-            <i class="fa-solid fa-folder-arrow-down"></i>
-            <span>서식다운</span>
-        </a>
-        <a href="#" class="nav-item" data-target="myinfo">
-            <i class="fa-solid fa-user"></i>
-            <span>내 정보</span>
-        </a>
-    </nav>
+
 </section>
 
         <!-- === Modal Overylays === -->
@@ -396,7 +378,7 @@
 
     <!-- 스크립트 연결 -->
     <!-- Firebase SDK (모듈 방식 지원 최신 브라우저용) -->
-    <script type="module" src="js/firebase-config.js?v=8"></script>
-    <script src="js/app.js?v=8"></script>
+    <script type="module" src="js/firebase-config.js?v=9"></script>
+    <script src="js/app.js?v=9"></script>
 </body>
 </html>

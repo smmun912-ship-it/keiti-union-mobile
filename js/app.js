@@ -255,7 +255,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // ----------------------------------------------------
     // 3. 네비게이션 탭 동작
     // ----------------------------------------------------
-    const navItems = document.querySelectorAll('.nav-item');
+    const navItems = document.querySelectorAll('.nav-item'); // (메뉴 삭제로 비어있을 수 있음)
+    const headerLogo = document.getElementById('header-logo');
+    const headerMyInfo = document.getElementById('header-myinfo');
     const sections = {
         'home': document.getElementById('section-home'),
         'board': document.getElementById('section-board'),
@@ -268,10 +270,12 @@ document.addEventListener('DOMContentLoaded', () => {
     window.showSection = function(target) {
         if(!sections[target]) return;
         
-        // 라우팅 활성화 UI 반전
-        navItems.forEach(nav => nav.classList.remove('active'));
-        const targetNav = document.querySelector(`.nav-item[data-target='${target}']`);
-        if(targetNav) targetNav.classList.add('active');
+        // 라우팅 활성화 UI 반전 (하단 메뉴가 있는 경우에만 동작)
+        if(navItems.length > 0) {
+            navItems.forEach(nav => nav.classList.remove('active'));
+            const targetNav = document.querySelector(`.nav-item[data-target='${target}']`);
+            if(targetNav) targetNav.classList.add('active');
+        }
         
         // 섹션 교체
         Object.values(sections).forEach(sec => {
@@ -294,6 +298,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (target === 'myinfo') renderMyInfo();
     };
 
+    // 상단 로고 클릭 시 홈으로
+    if(headerLogo) {
+        headerLogo.addEventListener('click', () => showSection('home'));
+    }
+
+    // 상단 내 정보 버튼 클릭 시 내 정보 섹션으로
+    if(headerMyInfo) {
+        headerMyInfo.addEventListener('click', () => showSection('myinfo'));
+    }
+
+    // (기존 하단 메뉴 리스너 코드는 navItems가 비어있으면 안전함)
     navItems.forEach(item => {
         item.addEventListener('click', (e) => {
             e.preventDefault();
