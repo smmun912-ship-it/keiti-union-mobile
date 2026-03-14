@@ -33,6 +33,45 @@ document.addEventListener('DOMContentLoaded', () => {
         { title: "휴게실 환경 개선 건의합니다.", author: "김영희", date: "2026.03.14", views: 12 }
     ];
 
+    // 자동 로그인(세션 유지) 로직
+    if (window.keitiFirebase && window.keitiFirebase.isInit) {
+        const fb = window.keitiFirebase;
+        fb.onAuthStateChanged(fb.auth, async (user) => {
+            if (user && !currentUser) { // 이미 로그인 정보가 없는데 세션이 있다면
+                try {
+                    const userDoc = await fb.getDoc(fb.doc(fb.db, "users", user.uid));
+                    if (userDoc.exists()) {
+                        const userData = userDoc.data();
+                        const id = userData.empId;
+                        if (id === "216008" || userData.status === 'approved') {
+                            currentUser = userData;
+                            if (id === "216008") {
+                                currentUser.role = currentUser.role || "부위원장";
+                                currentUser.isAdmin = true;
+                            }
+                            currentUserName = userData.name || id;
+                            enterMainView();
+                            loadBoardPosts();
+                            loadNewsPosts();
+                        } else {
+                            // 아직 승인이 안됐거나 거절되었다면 강제 로그아웃 
+                            await fb.signOut(fb.auth);
+                        }
+                    } else if (user.email && user.email.includes("216008")) {
+                        // 레거시 특별계정 처리
+                        currentUser = { empId: "216008", name: "문성만", role: "부위원장", isAdmin: true, status: "approved" };
+                        currentUserName = "문성만";
+                        enterMainView();
+                        loadBoardPosts();
+                        loadNewsPosts();
+                    }
+                } catch(e) {
+                    console.error("세션 복구 오류", e);
+                }
+            }
+        });
+    }
+
     // ----------------------------------------------------
     // 1. 회원가입 로직 (Firebase Auth & Firestore)
     // ----------------------------------------------------
@@ -186,7 +225,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function enterMainView() {
         // 홈 화면 이름 업데이트
         const heroName = document.querySelector('.hero-text h2 strong');
-        if(heroName) heroName.innerText = currentUserName;
+        const heroRoleObj = document.querySelector('.hero-text h2'); // 전체 h2 참조
+        if(heroName) {
+            heroName.innerText = currentUserName;
+            let displayRole = currentUser && currentUser.role ? currentUser.role : "조합원";
+            // innerHTML 덮어쓰기 (<strong> 보존)
+            heroRoleObj.innerHTML = `안녕하세요, <strong>${currentUserName}</strong> ${displayRole}님`;
+        }
 
         loginView.style.opacity = '0';
         setTimeout(() => {
@@ -608,10 +653,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if(docSnap.exists()) {
                 const data = docSnap.data();
-                const newViews = (data.views || 0) + 1;
+                
+                // 로컬스토리지 이용한 동일글 조회수 어뷰징 방지
+                let newViews = data.views || 0;
+                let viewedPosts = [];
+                try {
+                    viewedPosts = JSON.parse(localStorage.getItem('keiti_viewed_posts')) || [];
+                } catch(e) {}
 
-                // 조회수 즉각 업데이트
-                await fb.updateDoc(docRef, { views: newViews });
+                if (!viewedPosts.includes(docId)) {
+                    newViews += 1;
+                    viewedPosts.push(docId);
+                    localStorage.setItem('keiti_viewed_posts', JSON.stringify(viewedPosts));
+                    // 조회수 즉각 업데이트
+                    await fb.updateDoc(docRef, { views: newViews });
+                }
 
                 // UI 모달에 세팅
                 document.getElementById('detail-title').innerText = data.title;
