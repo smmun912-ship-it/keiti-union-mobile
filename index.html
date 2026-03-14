@@ -186,28 +186,63 @@
                     </div>
                 </div>
 
-            </main>
+        <!-- 4. 내 정보 탭 -->
+        <section id="section-myinfo" class="content-section" style="display:none; padding-bottom: 80px;">
+            <div class="page-title">
+                <h2>내 정보</h2>
+                <p>조합원 정보 확인 및 설정</p>
+            </div>
 
-            <!-- 하단 고정 탭 바 -->
-            <nav class="bottom-nav">
-                <a href="#" class="nav-item active" data-target="home">
-                    <i class="fa-solid fa-house"></i>
-                    <span>홈</span>
-                </a>
-                <a href="#" class="nav-item" data-target="board">
-                    <i class="fa-solid fa-list-ul"></i>
-                    <span>게시판</span>
-                </a>
-                <a href="#" class="nav-item" data-target="download">
-                    <i class="fa-solid fa-folder-arrow-down"></i>
-                    <span>서식다운</span>
-                </a>
-                <a href="#" class="nav-item">
-                    <i class="fa-solid fa-user"></i>
-                    <span>내 정보</span>
-                </a>
-            </nav>
+            <div class="card myinfo-card" style="margin-top: 20px;">
+                <div class="info-row" style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <span class="info-label" style="color:var(--text-secondary);">이름</span>
+                    <span class="info-value" id="info-name" style="font-weight:bold;">-</span>
+                </div>
+                <div class="info-row" style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <span class="info-label" style="color:var(--text-secondary);">사번</span>
+                    <span class="info-value" id="info-id" style="font-weight:bold;">-</span>
+                </div>
+                <div class="info-row" style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <span class="info-label" style="color:var(--text-secondary);">직위</span>
+                    <span class="info-value" id="info-role" style="font-weight:bold;">-</span>
+                </div>
+                
+                <button id="btn-logout" class="btn btn-secondary" style="margin-top:20px; width:100%;">로그아웃</button>
+            </div>
+
+            <!-- 관리자 전용: 가입 승인 대기 목록 -->
+            <div id="admin-pending-section" style="display: none; margin-top: 30px;">
+                <h3 style="margin-bottom: 15px; font-size: 16px; color: var(--primary-blue);">
+                    <i class="fa-solid fa-users-gear"></i> 가입 대기자 승인 관리
+                </h3>
+                <div id="pending-users-list" class="card list-card" style="padding:0;">
+                    <div style="padding: 20px; text-align:center; color:#999;">승인 대기 중인 사용자가 없습니다.</div>
+                </div>
+            </div>
         </section>
+
+    </main>
+
+    <!-- 하단 고정 탭 바 -->
+    <nav class="bottom-nav">
+        <a href="#" class="nav-item active" data-target="home">
+            <i class="fa-solid fa-house"></i>
+            <span>홈</span>
+        </a>
+        <a href="#" class="nav-item" data-target="board">
+            <i class="fa-solid fa-list-ul"></i>
+            <span>게시판</span>
+        </a>
+        <a href="#" class="nav-item" data-target="download">
+            <i class="fa-solid fa-folder-arrow-down"></i>
+            <span>서식다운</span>
+        </a>
+        <a href="#" class="nav-item" data-target="myinfo">
+            <i class="fa-solid fa-user"></i>
+            <span>내 정보</span>
+        </a>
+    </nav>
+</section>
 
         <!-- === Modal Overylays === -->
         
