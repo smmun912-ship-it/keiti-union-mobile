@@ -22,8 +22,8 @@
     <!-- 아이콘: FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- 커스텀 스타일 -->
-    <link rel="stylesheet" href="css/style.css?v=17">
-    <link rel="stylesheet" href="css/modal.css?v=17">
+    <link rel="stylesheet" href="css/style.css?v=18">
+    <link rel="stylesheet" href="css/modal.css?v=18">
 </head>
 <body>
     <div id="app" class="app-container">
@@ -74,7 +74,7 @@
                 
                 <!-- 홈 섹션 -->
                 <div id="section-home" class="content-section" style="display: block;">
-                    <!-- 히어로 카드 -->
+                    <!-- 히어로 배너 카드 -->
                     <div class="hero-card">
                         <div class="hero-text">
                             <h2>안녕하세요, <strong>홍길동</strong> 조합원님</h2>
@@ -85,32 +85,40 @@
                         </div>
                     </div>
 
-                    <!-- 퀵 메뉴 (6개 항목으로 디자인 조정 필요) -->
-                    <div class="quick-menu">
-                        <div class="menu-item" data-target="news" onclick="showSection('news')">
-                            <div class="menu-icon bg-blue"><i class="fa-solid fa-bullhorn"></i><span>노조소식</span></div>
+                    <!-- 메인 메뉴 카드 그리드 (2 x 2) -->
+                    <div class="home-menu-grid">
+                        <div class="home-menu-card card-green" onclick="showSection('news')">
+                            <span class="home-menu-label">노조 소식</span>
+                            <i class="fa-solid fa-bullhorn home-menu-icon"></i>
                         </div>
-                        <div class="menu-item" data-target="board" onclick="showSection('board')">
-                            <div class="menu-icon bg-green"><i class="fa-regular fa-comments"></i><span>자유게시판</span></div>
+                        <div class="home-menu-card card-teal" onclick="showSection('board')">
+                            <span class="home-menu-label">자유게시판</span>
+                            <i class="fa-regular fa-comments home-menu-icon"></i>
                         </div>
-                        <div class="menu-item" data-target="schedule" onclick="showSection('schedule')">
-                            <div class="menu-icon bg-indigo"><i class="fa-regular fa-calendar-check"></i><span>주요일정</span></div>
+                        <div class="home-menu-card card-emerald" onclick="showSection('schedule')">
+                            <span class="home-menu-label">주요일정</span>
+                            <i class="fa-regular fa-calendar-check home-menu-icon"></i>
                         </div>
-                        <div class="menu-item" data-target="download" onclick="showSection('download')">
-                            <div class="menu-icon bg-orange"><i class="fa-solid fa-file-arrow-down"></i><span>서식다운</span></div>
+                        <div class="home-menu-card card-blue" onclick="showSection('download')">
+                            <span class="home-menu-label">서식다운</span>
+                            <i class="fa-solid fa-file-arrow-down home-menu-icon"></i>
                         </div>
-                        <div class="menu-item" data-target="benefits" onclick="showSection('benefits')">
-                            <div class="menu-icon bg-purple"><i class="fa-solid fa-clipboard-user"></i><span>조합원혜택</span></div>
+                    </div>
+
+                    <!-- 하단 풀폭 메뉴 버튼 -->
+                    <div class="home-menu-full">
+                        <div class="home-menu-full-btn btn-full-sky" onclick="showSection('benefits')">
+                            <i class="fa-solid fa-clipboard-user"></i> 조합원 혜택
                         </div>
-                        <div class="menu-item" data-target="gallery" onclick="showSection('gallery')">
-                            <div class="menu-icon bg-pink"><i class="fa-regular fa-images"></i><span>활동사진</span></div>
+                        <div class="home-menu-full-btn btn-full-indigo" onclick="showSection('gallery')">
+                            <i class="fa-regular fa-images"></i> 활동사진
                         </div>
                     </div>
 
                     <!-- 최근 소식 리스트 카드 -->
                     <div class="card-section">
                         <div class="section-header">
-                            <h3>최근 소식</h3>
+                            <h3><i class="fa-solid fa-clock" style="color:var(--primary-blue); margin-right:6px;"></i>최근 소식</h3>
                             <a href="#" class="view-all" onclick="document.querySelector('.nav-item[data-target=\'board\']').click(); return false;">더보기 <i class="fa-solid fa-chevron-right"></i></a>
                         </div>
                         <div class="list-card" id="home-recent-posts">

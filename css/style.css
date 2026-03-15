@@ -296,48 +296,137 @@ body {
     opacity: 0.8;
 }
 
-/* 퀵 메뉴 */
-.quick-menu {
+/* 퀵 메뉴 → 대형 카드 그리드 */
+.home-menu-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-    margin-bottom: 32px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-bottom: 14px;
 }
 
-.menu-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    cursor: pointer;
-}
-
-.menu-icon {
-    width: 100%;
-    height: 76px;
+.home-menu-card {
+    position: relative;
     border-radius: 20px;
+    padding: 22px 20px;
+    min-height: 110px;
+    cursor: pointer;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.home-menu-card:active {
+    transform: scale(0.96);
+}
+
+.home-menu-card::before {
+    content: '';
+    position: absolute;
+    top: -30%; right: -20%;
+    width: 100px; height: 100px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.home-menu-card::after {
+    content: '';
+    position: absolute;
+    bottom: -20%; left: -15%;
+    width: 80px; height: 80px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.home-menu-label {
+    font-size: 17px;
+    font-weight: 700;
+    color: white;
+    z-index: 1;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.home-menu-icon {
+    font-size: 28px;
+    color: rgba(255,255,255,0.75);
+    align-self: flex-end;
+    z-index: 1;
+    margin-top: 10px;
+}
+
+/* 카드 색상 테마 */
+.card-green {
+    background: linear-gradient(135deg, #34D399 0%, #059669 100%);
+    box-shadow: 0 6px 20px rgba(5,150,105,0.35);
+}
+.card-teal {
+    background: linear-gradient(135deg, #2DD4BF 0%, #0D9488 100%);
+    box-shadow: 0 6px 20px rgba(13,148,136,0.35);
+}
+.card-emerald {
+    background: linear-gradient(135deg, #6EE7B7 0%, #10B981 100%);
+    box-shadow: 0 6px 20px rgba(16,185,129,0.35);
+}
+.card-blue {
+    background: linear-gradient(135deg, #60A5FA 0%, #2563EB 100%);
+    box-shadow: 0 6px 20px rgba(37,99,235,0.35);
+}
+
+/* 하단 풀폭 메뉴 버튼 */
+.home-menu-full {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 28px;
+}
+
+.home-menu-full-btn {
+    width: 100%;
+    padding: 16px 20px;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: 700;
+    color: white;
+    cursor: pointer;
+    text-align: center;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 26px;
-    color: white;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    gap: 6px;
+    gap: 10px;
 }
 
-.bg-blue { background: linear-gradient(135deg, #3B82F6 0%, #172554 100%); }
-.bg-green { background: linear-gradient(135deg, #10B981 0%, #064E3B 100%); }
-.bg-orange { background: linear-gradient(135deg, #F59E0B 0%, #78350F 100%); }
-.bg-purple { background: linear-gradient(135deg, #8B5CF6 0%, #4C1D95 100%); }
-.bg-indigo { background: linear-gradient(135deg, #6366F1 0%, #312E81 100%); }
-.bg-pink { background: linear-gradient(135deg, #EC4899 0%, #831843 100%); }
-
-.menu-icon span {
-    font-size: 14px;
-    font-weight: 600;
-    color: white;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+.home-menu-full-btn:active {
+    transform: scale(0.97);
 }
+
+.home-menu-full-btn i {
+    font-size: 18px;
+}
+
+.btn-full-sky {
+    background: linear-gradient(135deg, #7DD3FC 0%, #0284C7 100%);
+    box-shadow: 0 4px 16px rgba(2,132,199,0.3);
+}
+
+.btn-full-indigo {
+    background: linear-gradient(135deg, #A5B4FC 0%, #4F46E5 100%);
+    box-shadow: 0 4px 16px rgba(79,70,229,0.3);
+}
+
+/* 최근소식 섹션 스타일 보강 */
+.card-section {
+    margin-top: 4px;
+}
+
+.section-header h3 {
+    display: flex;
+    align-items: center;
+}
+
 
 /* 리스트 카드 (공지, 게시판 공통) */
 .section-header {
